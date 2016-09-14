@@ -2,9 +2,9 @@
 
 int main(){
 
-	int t = 3;
+	int t = 5;
 	
-	if (t == 5){
+if (t == 5){
 		std::cout << "t is 5" << std::endl;
 	}
 	
