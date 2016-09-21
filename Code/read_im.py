@@ -39,7 +39,7 @@ dhm_out_n = Image.fromarray(dhm_n.astype(uint8))
 dhm_out.save('visulation/images/dhm.bmp')
 dhm_out_n.save('visulation/images/dhm_n.bmp')
 
-"""
+
 dtm = array(Image.open('../Data/dtm/' + map_name + 'dtm.tif'))
 dtm[dtm < 0] = 0
 dtm_n = (dtm/dtm.max())*255.0
@@ -47,3 +47,9 @@ dtm_out = Image.fromarray(dtm.astype(uint8))
 dtm_out_n = Image.fromarray(dtm_n.astype(uint8))
 dtm_out.save('visulation/images/dtm.bmp')
 dtm_out_n.save('visulation/images/dtm_n.bmp')
+
+"""
+
+aux = array(Image.open('../Data/auxfiles/' + map_name + 'cls.tif'))
+aux_out = Image.fromarray(aux.astype(uint8))
+aux_out.save('visulation/images/aux.bmp')

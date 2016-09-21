@@ -25,7 +25,8 @@ mat4 tot;
 mat4 rot;
 float k = 1;
 float move_step = 0.05;
-GLint is_visible[] = {1,0,0,0};
+GLint is_visible[] = {1,0,0,0,0};
+GLfloat mask_transparency = 0.5;
 
 void keyUpdate(){
     
@@ -82,13 +83,34 @@ void keyUpdate(){
         is_visible[2] = 0;
         is_visible[3] = 1;
     }
-    
+    else if (glutKeyIsDown('o')) {
+        is_visible[4] = 1;
+    }
+    else if (glutKeyIsDown('p')) {
+        is_visible[4] = 0;
+    }
+    else if (glutKeyIsDown('i')) {
+        is_visible[0] = 0;
+        is_visible[1] = 0;
+        is_visible[2] = 0;
+        is_visible[3] = 0;
+    }
+    else if (glutKeyIsDown('0')) {
+        if(mask_transparency < 0.96){
+        mask_transparency += 0.02;
+        }
+    }
+    else if (glutKeyIsDown('+')) {
+        if(mask_transparency > 0.04){
+            mask_transparency -= 0.02;
+        }
+    }
 }
 
 void OnTimer(int value)
 {
     glutPostRedisplay();
-    glutTimerFunc(15, &OnTimer, value);
+    glutTimerFunc(10, &OnTimer, value);
 }
 
 void add_texture(const GLchar name[], const GLchar location[], GLuint texture_id, GLuint* program){
@@ -188,10 +210,10 @@ void init(void)
     glEnableVertexAttribArray(glGetAttribLocation(program, "in_Position"));
     
     // VBO for normal data
-    glBindBuffer(GL_ARRAY_BUFFER, bunnyNormalBufferObjID);
-    glBufferData(GL_ARRAY_BUFFER, m->numVertices*3*sizeof(GLfloat), m->normalArray, GL_STATIC_DRAW);
-    glVertexAttribPointer(glGetAttribLocation(program, "in_Normal"), 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(glGetAttribLocation(program, "in_Normal"));
+//    glBindBuffer(GL_ARRAY_BUFFER, bunnyNormalBufferObjID);
+//    glBufferData(GL_ARRAY_BUFFER, m->numVertices*3*sizeof(GLfloat), m->normalArray, GL_STATIC_DRAW);
+//    glVertexAttribPointer(glGetAttribLocation(program, "in_Normal"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+//    glEnableVertexAttribArray(glGetAttribLocation(program, "in_Normal"));
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bunnyIndexBufferObjID);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m->numIndices*sizeof(GLuint), m->indexArray, GL_STATIC_DRAW);
@@ -210,6 +232,7 @@ void init(void)
     add_texture("dhm_tex"  , "./images/dhm_n.bmp",1,&program);
     add_texture("dsm_tex"  , "./images/dsm.bmp",2,&program);
     add_texture("dtm_tex"  , "./images/dtm.bmp",3,&program);
+    add_texture("cls_tex"  , "./images/aux.bmp",4,&program);
     
 	
 	printError("init arrays");
@@ -227,7 +250,8 @@ void display(void)
     keyUpdate();
 
     
-    glUniform1iv(glGetUniformLocation(program, "is_visible"), 4, is_visible);
+    glUniform1iv(glGetUniformLocation(program, "is_visible"), 5, is_visible);
+    glUniform1f(glGetUniformLocation(program, "mask_transparency"),mask_transparency);
 
     printError("init shader");
 	printError("pre display");
@@ -258,4 +282,5 @@ int main(int argc, char *argv[])
 	glutDisplayFunc(display); 
 	init ();
 	glutMainLoop();
+    printf("The end \n");
 }
