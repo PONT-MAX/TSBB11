@@ -51,5 +51,10 @@ def visulation_export( map_name ):
     print("Export AUX png")
     return
 
+def visulation_export_result(output_name, output_array):
+    output_image = Image.fromarray(output_array.astype(uint8),"L")
+    output_image.save('visulation/images/' + output_name + '.png')
+    return
+
 
 
