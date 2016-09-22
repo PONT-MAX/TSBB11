@@ -9,7 +9,7 @@ def visulation_export( map_name ):
     # Ortho
     ortho = array(Image.open('../Data/ortho/' + map_name + 'tex.tif'))
     ortho_out = Image.fromarray(ortho.astype(uint8))
-    ortho_out.save('visulation/images/ortho.bmp')
+    ortho_out.save('visulation/images/ortho.png')
     print("Export Ortho png")
 
     # DSM
