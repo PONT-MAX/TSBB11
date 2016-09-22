@@ -120,7 +120,7 @@ void add_texture(const GLchar name[], const GLchar location[], GLuint texture_id
     
     //Load iamge
     int width, hight, comp;
-    unsigned char* tex_image = stbi_load(location, &width, &hight, &comp, STBI_rgb_alpha);
+    unsigned char* tex_image = stbi_load(location, &width, &hight, &comp, 0);
     
     if (!tex_image){
         printf("stbi_load failed \n");
@@ -134,7 +134,40 @@ void add_texture(const GLchar name[], const GLchar location[], GLuint texture_id
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, hight, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_image);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, hight, 0, GL_RED, GL_UNSIGNED_BYTE, tex_image);
+    
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    
+    glActiveTexture(GL_TEXTURE0 + tex_id);
+    glBindTexture(GL_TEXTURE_2D, tex_id);
+    
+    stbi_image_free(tex_image);
+    
+    
+}
+
+void add_texture_rgb(const GLchar name[], const GLchar location[], GLuint texture_id, GLuint* program){
+    
+    glUniform1i(glGetUniformLocation(*program, name), texture_id); // Texture unit 0
+    
+    //Load iamge
+    int width, hight, comp;
+    unsigned char* tex_image = stbi_load(location, &width, &hight, &comp, STBI_rgb);
+    
+    if (!tex_image){
+        printf("stbi_load failed \n");
+    }
+    
+    GLuint tex_id = texture_id;
+    glGenTextures(1, &tex_id);
+    glBindTexture(GL_TEXTURE_2D, tex_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, hight, 0, GL_RGB, GL_UNSIGNED_BYTE, tex_image);
     
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -225,7 +258,7 @@ void init(void)
     
     
     
-    add_texture("ortho_tex", "./images/ortho.png",0,&program);
+    add_texture_rgb("ortho_tex", "./images/ortho.png",0,&program);
     add_texture("dhm_tex"  , "./images/dhm_n.png",1,&program);
     add_texture("dsm_tex"  , "./images/dsm_n.png",2,&program);
     add_texture("dtm_tex"  , "./images/dtm_n.png",3,&program);

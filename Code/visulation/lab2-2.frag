@@ -11,7 +11,7 @@ float color_scalar = 1.0;
 
 void main(void)
 {
-    
+    out_Color = vec4(0.0,0.0,0.0,0.0);
     if (is_visible[4] == true) {
         if((is_visible[3] == false) && (is_visible[2] == false) && (is_visible[1] == false) && (is_visible[0] == false) ){
         color_scalar = 0.0;
@@ -46,15 +46,15 @@ void main(void)
     }
     else if (is_visible[1] == true) {
         vec4 dhm = texture(dhm_tex,intpTexCoord);
-        out_Color += dhm*color_scalar;
+        out_Color += vec4(dhm.r,dhm.r,dhm.r,1.0)*color_scalar;
     }
     else if (is_visible[2] == true) {
         vec4 dsm = texture(dsm_tex,intpTexCoord);
-        out_Color += dsm*color_scalar;
+        out_Color += vec4(dsm.r,dsm.r,dsm.r,1.0)*color_scalar;
     }
     else if (is_visible[3] == true) {
         vec4 dtm = texture(dtm_tex,intpTexCoord);
-        out_Color += dtm*color_scalar;
+        out_Color += vec4(dtm.r,dtm.r,dtm.r,1.0)*color_scalar;
     }
     
 }
