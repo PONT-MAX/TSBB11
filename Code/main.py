@@ -17,21 +17,19 @@ map_name = map_source_directory[5]
 
 # call type w/: dtm,dsm,dhm,cls,ortho
 #ortho = init_v.get_map_array('ortho', map_name, True)
-#dtm =   init_v.get_map_array('dtm', map_name, True)
+dtm =   init_v.get_map_array('dtm', map_name, True)
 #dsm =   init_v.get_map_array('dsm', map_name, True)
 dhm =   init_v.get_map_array('dhm', map_name, True)
 cls =   init_v.get_map_array('cls', map_name, True)
 
-
+#print(np.argwhere(dtm<0))
+print(np.argwhere(dhm<-10))
 
 # Pre processing
 
-# Get mean value
-dhm_mean = np.mean(dhm)
-print(dhm_mean)
-dhm_mean = dhm_mean-1.5
 # Extract treshold
-dhm[dhm<dhm_mean] = 0
+# less then 2 meters high is not an object (house)
+dhm[dhm<2] = 0
 
 # Make copy for use later
 cls2 = np.copy(cls)
@@ -47,7 +45,8 @@ object_mask = np.multiply(dhm,cls)
 object_mask[object_mask>0.0] = 2
 cls2 = cls2 + object_mask
 
-vei.visulation_export_result('aux2', cls2)
+#Overwrites old class mask
+vei.visulation_export_result('aux', cls2)
 
 
 # Edge detection adn extraction
