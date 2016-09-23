@@ -38,7 +38,7 @@ def get_map_array(type,map_name,print_info):
 
     if(print_info):
         print('')
-        print type, ' array shape r x c = ', map_array.shape
-        print type, ' type = ', map_array.dtype
+        print(map_array.shape)
+        print(map_array.dtype)
 
     return map_array
