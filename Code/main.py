@@ -15,15 +15,12 @@ from PIL import Image
 map_source_directory = init_v.init_map_directory()
 map_name = map_source_directory[5]
 
+"""
 # call type w/: dtm,dsm,dhm,cls,ortho
-#ortho = init_v.get_map_array('ortho', map_name, True)
 dtm =   init_v.get_map_array('dtm', map_name, True)
-#dsm =   init_v.get_map_array('dsm', map_name, True)
 dhm =   init_v.get_map_array('dhm', map_name, True)
 cls =   init_v.get_map_array('cls', map_name, True)
 
-#print(np.argwhere(dtm<0))
-print(np.argwhere(dhm<-10))
 
 # Pre processing
 
@@ -45,9 +42,9 @@ object_mask = np.multiply(dhm,cls)
 object_mask[object_mask>0.0] = 2
 cls2 = cls2 + object_mask
 
-#Overwrites old class mask
-vei.visulation_export_result('aux', cls2)
-
+cls3 = vei.visulation_export_cls(cls2)
+vei.visulation_export_result('aux2', cls3)
+"""
 
 # Edge detection adn extraction
 
@@ -58,5 +55,5 @@ vei.visulation_export_result('aux', cls2)
 # Export to visual
 
 
-# vei.visulation_export(map_name)
+vei.visulation_export(map_name)
 #call(["./visulation/lab"])

@@ -89,12 +89,6 @@ void keyUpdate(){
     else if (glutKeyIsDown('p')) { // Hide class mask
         is_visible[4] = 0;
     }
-    else if (glutKeyIsDown('i')) { // Show only class mask i.e alpha.ch set to max
-        is_visible[0] = 0;
-        is_visible[1] = 0;
-        is_visible[2] = 0;
-        is_visible[3] = 0;
-    }
     else if (glutKeyIsDown('0')) { // Lower opacity
         if(mask_transparency < 0.96){
         mask_transparency += 0.02;
@@ -114,7 +108,29 @@ void OnTimer(int value)
     glutTimerFunc(10, &OnTimer, value);
 }
 
-void add_texture(const GLchar name[], const GLchar location[], GLuint texture_id, GLuint* program){
+void texture_setting(int mipmap){
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    
+    if(mipmap == 1){
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    }
+    else if(mipmap == 2){
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
+    else{
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
+
+    
+}
+
+void add_texture(const GLchar name[], const GLchar location[], GLuint texture_id, GLuint* program,int texture_setting_var){
     
     glUniform1i(glGetUniformLocation(*program, name), texture_id); // Texture unit 0
     
@@ -129,25 +145,19 @@ void add_texture(const GLchar name[], const GLchar location[], GLuint texture_id
     GLuint tex_id = texture_id;
     glGenTextures(1, &tex_id);
     glBindTexture(GL_TEXTURE_2D, tex_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, hight, 0, GL_RED, GL_UNSIGNED_BYTE, tex_image);
     
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     
     glActiveTexture(GL_TEXTURE0 + tex_id);
     glBindTexture(GL_TEXTURE_2D, tex_id);
-    
+    texture_setting(texture_setting_var);
     stbi_image_free(tex_image);
     
     
 }
 
-void add_texture_rgb(const GLchar name[], const GLchar location[], GLuint texture_id, GLuint* program){
+void add_texture_rgb(const GLchar name[], const GLchar location[], GLuint texture_id, GLuint* program,int texture_setting_var){
     
     glUniform1i(glGetUniformLocation(*program, name), texture_id); // Texture unit 0
     
@@ -162,19 +172,13 @@ void add_texture_rgb(const GLchar name[], const GLchar location[], GLuint textur
     GLuint tex_id = texture_id;
     glGenTextures(1, &tex_id);
     glBindTexture(GL_TEXTURE_2D, tex_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, hight, 0, GL_RGB, GL_UNSIGNED_BYTE, tex_image);
     
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     
     glActiveTexture(GL_TEXTURE0 + tex_id);
     glBindTexture(GL_TEXTURE_2D, tex_id);
-    
+    texture_setting(texture_setting_var);
     stbi_image_free(tex_image);
     
     
@@ -257,13 +261,13 @@ void init(void)
     }
     
     
+    add_texture_rgb("ortho_tex", "./images/ortho.png",0,&program,1);
+    add_texture_rgb("cls_tex"  , "./images/aux.png",1,&program,0);
+    add_texture("dhm_tex"  , "./images/dhm_n.png",2,&program,0);
+    //add_texture("dsm_tex"  , "./images/dsm_n.png",3,&program,0);
+    //add_texture("dtm_tex"  , "./images/dtm_n.png",4,&program,0);
     
-    add_texture_rgb("ortho_tex", "./images/ortho.png",0,&program);
-    add_texture("dhm_tex"  , "./images/dhm_n.png",1,&program);
-    add_texture("dsm_tex"  , "./images/dsm_n.png",2,&program);
-    add_texture("dtm_tex"  , "./images/dtm_n.png",3,&program);
-    add_texture("cls_tex"  , "./images/aux.png",4,&program);
-    
+
 	
 	printError("init Textures");
 }
