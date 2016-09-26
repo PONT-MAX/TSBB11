@@ -9,6 +9,8 @@ def visulation_export( map_name ):
     # Ortho
     ortho = array(Image.open('../Data/ortho/' + map_name + 'tex.tif'))
     ortho_out = Image.fromarray(ortho.astype(uint8))
+    h,w = ortho_out.size
+    ortho_out = ortho_out.resize((w/2, h/2), Image.BICUBIC)
     ortho_out.save('visulation/images/ortho.png')
     print("Export Ortho png")
 
@@ -19,6 +21,7 @@ def visulation_export( map_name ):
     # dsm_out = Image.fromarray(dsm.astype(uint8))
     # dsm_out.save('visulation/images/dsm.png')
     dsm_out_n = Image.fromarray(dsm_n.astype(uint8))
+    dsm_out_n = dsm_out_n.resize((w / 2, h / 2), Image.BICUBIC)
     dsm_out_n.save('visulation/images/dsm_n.png')
     print("Export DSM png")
 
@@ -29,6 +32,7 @@ def visulation_export( map_name ):
     #dhm_out = Image.fromarray(dhm.astype(uint8))
     # dhm_out.save('visulation/images/dhm.png')
     dhm_out_n = Image.fromarray(dhm_n.astype(uint8))
+    dhm_out_n = dhm_out_n.resize((w / 2, h / 2), Image.BICUBIC)
     dhm_out_n.save('visulation/images/dhm_n.png')
     print("Export DHM png")
 
@@ -39,6 +43,7 @@ def visulation_export( map_name ):
     #dtm_out = Image.fromarray(dtm.astype(uint8))
     # dtm_out.save('visulation/images/dtm.png')
     dtm_out_n = Image.fromarray(dtm_n.astype(uint8))
+    dtm_out_n = dtm_out_n.resize((w / 2, h / 2), Image.BICUBIC)
     dtm_out_n.save('visulation/images/dtm_n.png')
     print("Export DTM png")
 
@@ -46,8 +51,10 @@ def visulation_export( map_name ):
     aux = array(Image.open('../Data/auxfiles/' + map_name + 'cls.tif'))
     aux = visulation_export_cls(aux)
     aux_out = Image.fromarray(aux.astype(uint8))
+    aux_out = aux_out.resize((w / 2, h / 2), Image.NEAREST)
     aux_out.save('visulation/images/aux.png')
     print("Export AUX png")
+
     return
 
 def visulation_export_result(output_name, output_array):

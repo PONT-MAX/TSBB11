@@ -8,7 +8,11 @@
 	#include "common/MicroGlut.h"
 	// Linking hint for Lightweight IDE
 	// uses framework Cocoa
+#else
+    #include <OpenGL/gl3.h> // Denna ska ändras för win
+    #include "common/MicroGlut.h" //Samma?
 #endif
+
 #include "common/GL_utilities.h"
 #include "common/VectorUtils3.h"
 #include "common/loadobj.h"
