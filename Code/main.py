@@ -13,7 +13,7 @@ import visulation_export_image as vei
 from subprocess import call
 from PIL import Image
 from PIL import ImageOps
-
+from matplotlib import pyplot as plt
 
 map_source_directory = init_v.init_map_directory()
 map_name = map_source_directory[5]
@@ -27,31 +27,45 @@ cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif',0)
 print(np.amax(cls))
 # extract tall bouldings
 # less then 2 meters high is not an object (house)
-dhm[dhm<4.9] = 0
+dhm[dhm<1.5] = 0
 dhm_mask = np.copy(dhm)
 dhm_mask[dhm_mask>0] = 1
 cls[cls != 2] = 0
 cls[cls > 0] = 1
 
-obj_mask =  np.copy(cls)
+
 obj_mask = cls*np.uint8(dhm_mask)
 # Put to 255 for show
 obj_mask[obj_mask>0] = 1
 #Image.fromarray(obj_mask).show()
-obj_mask_med = cv2.medianBlur(obj_mask,21)
+obj_mask_med = cv2.medianBlur(obj_mask,5)
 #Image.fromarray(obj_mask_med).show()
 
-dhm_obj = dhm*obj_mask_med
+#dhm_obj = ((dhm*obj_mask_med)/np.amax(dhm))*255.0
+dhm_obj = (dhm*obj_mask_med)
 #Image.fromarray(dhm_obj).show()
 
 
 obj = np.uint8(dhm_obj)
-ret, thresh = cv2.threshold(obj,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
+img = cv2.imread('home.jpg',0)
+plt.hist(obj.ravel(),256,[0,256])
+plt.show()
+
+blur = cv2.GaussianBlur(obj,(9,9),0)
+med = cv2.medianBlur(blur,7)
+ret, thresh = cv2.threshold(med,1,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+#ret, thresh = cv2.threshold(med,10,255,cv2.THRESH_BINARY)
+#thresh = cv2.adaptiveThreshold(med,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,0)
+
+Image.fromarray(obj).show('obj')
+Image.fromarray(thresh).show('threshold')
+
+"""
 # noise removal
 kernel = np.ones((3,3),np.uint8)
 # Tweeka itterations
-opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 3)
+opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 2)
 
 # sure background area
 #Tweeka itreataions
@@ -59,7 +73,7 @@ sure_bg = cv2.dilate(opening,kernel,iterations=3)
 
 # Finding sure foreground area
 dist_transform = cv2.distanceTransform(opening,cv2.DIST_L2,5)
-ret, sure_fg = cv2.threshold(dist_transform,0.15*dist_transform.max(),255,0)
+ret, sure_fg = cv2.threshold(dist_transform,0.04*dist_transform.max(),255,0)
 
 
 
@@ -67,8 +81,10 @@ ret, sure_fg = cv2.threshold(dist_transform,0.15*dist_transform.max(),255,0)
 sure_fg = np.uint8(sure_fg)
 unknown = cv2.subtract(sure_bg,sure_fg)
 
+# FIXA THRESHOLD
+
 Image.fromarray(sure_fg).show('foreground')
-#Image.fromarray(sure_bg).show('background')
+Image.fromarray(sure_bg).show('background')
 #Image.fromarray(unknown).show('unknown')
 #Image.fromarray(dist_transform).show('dist')
 
@@ -99,10 +115,10 @@ print(obj_rgb.shape)
 print(obj_rgb.dtype)
 
 markers1 = cv2.watershed(obj_rgb,markers)
-obj_rgb[markers1 == -1] = [255,0,0]
+obj_rgb[markers1 == -1] = [255,255,0]
 
 Image.fromarray(obj_rgb).show()
-
+"""
 
 """
 
