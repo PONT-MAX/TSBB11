@@ -48,20 +48,20 @@ dhm_obj = (dhm*obj_mask_med)
 
 obj = np.uint8(dhm_obj)
 
-img = cv2.imread('home.jpg',0)
-plt.hist(obj.ravel(),256,[0,256])
-plt.show()
+# Plot histogram
+#plt.hist(obj.ravel(),256,[0,256])
+#plt.show()
 
-blur = cv2.GaussianBlur(obj,(9,9),0)
-med = cv2.medianBlur(blur,7)
-ret, thresh = cv2.threshold(med,1,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-#ret, thresh = cv2.threshold(med,10,255,cv2.THRESH_BINARY)
+#blur = cv2.GaussianBlur(obj,(1,1),0)
+med = cv2.medianBlur(obj,21)
+#ret, thresh = cv2.threshold(med,1,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+ret, thresh = cv2.threshold(med,3,255,cv2.THRESH_BINARY)
 #thresh = cv2.adaptiveThreshold(med,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,0)
 
-Image.fromarray(obj).show('obj')
+#Image.fromarray(obj).show('obj')
 Image.fromarray(thresh).show('threshold')
 
-"""
+
 # noise removal
 kernel = np.ones((3,3),np.uint8)
 # Tweeka itterations
@@ -118,7 +118,7 @@ markers1 = cv2.watershed(obj_rgb,markers)
 obj_rgb[markers1 == -1] = [255,255,0]
 
 Image.fromarray(obj_rgb).show()
-"""
+
 
 """
 
