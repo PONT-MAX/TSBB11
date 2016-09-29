@@ -53,13 +53,14 @@ obj = np.uint8(dhm_obj)
 #plt.show()
 
 #blur = cv2.GaussianBlur(obj,(1,1),0)
-med = cv2.medianBlur(obj,21)
+med = cv2.medianBlur(obj,9)
+
 #ret, thresh = cv2.threshold(med,1,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-ret, thresh = cv2.threshold(med,3,255,cv2.THRESH_BINARY)
+ret, thresh = cv2.threshold(med,4,255,cv2.THRESH_BINARY)
 #thresh = cv2.adaptiveThreshold(med,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,0)
 
 #Image.fromarray(obj).show('obj')
-Image.fromarray(thresh).show('threshold')
+#Image.fromarray(thresh).show('threshold')
 
 
 # noise removal
@@ -73,7 +74,7 @@ sure_bg = cv2.dilate(opening,kernel,iterations=3)
 
 # Finding sure foreground area
 dist_transform = cv2.distanceTransform(opening,cv2.DIST_L2,5)
-ret, sure_fg = cv2.threshold(dist_transform,0.04*dist_transform.max(),255,0)
+ret, sure_fg = cv2.threshold(dist_transform,0.20*dist_transform.max(),255,0)
 
 
 
@@ -83,8 +84,8 @@ unknown = cv2.subtract(sure_bg,sure_fg)
 
 # FIXA THRESHOLD
 
-Image.fromarray(sure_fg).show('foreground')
-Image.fromarray(sure_bg).show('background')
+# Image.fromarray(sure_fg).show('foreground')
+# Image.fromarray(sure_bg).show('background')
 #Image.fromarray(unknown).show('unknown')
 #Image.fromarray(dist_transform).show('dist')
 
@@ -95,29 +96,19 @@ ret, markers = cv2.connectedComponents(sure_fg)
 # Add one to all labels so that sure background is not 0, but 1
 markers = markers+1
 
+# Now, mark the region of unknown with zero
 markers[unknown==255] = 0
 
-# Now, mark the region of unknown with zero
-#markers[unknown==255] = 0
 
-#Image.fromarray(markers).show()
-
-print("markers")
-print(markers.shape)
-print(markers.dtype)
-print("obj")
-print(obj.shape)
-print(obj.dtype)
-
+# Watershed need colorimage
 obj_rgb  = cv2.cvtColor(obj, cv2.COLOR_GRAY2BGR)
-print("obj_rgb")
-print(obj_rgb.shape)
-print(obj_rgb.dtype)
 
+# Watershed
 markers1 = cv2.watershed(obj_rgb,markers)
 obj_rgb[markers1 == -1] = [255,255,0]
 
 Image.fromarray(obj_rgb).show()
+Image.fromarray(markers1).show()
 
 
 """
