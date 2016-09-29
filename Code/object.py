@@ -14,7 +14,7 @@ def getVolume(dhm_mask,area):
 
     roof_type = (max_height-avg_height)/max_height
 
-    if True:
+    if False:
         print("Vol=  ")
         print(vol)
         print("Max Height=  ")
@@ -28,8 +28,9 @@ def getVolume(dhm_mask,area):
     return (vol,max_height,avg_height,roof_type)
 
 def getArea(mark_mask):
-    ret, thresh = cv2.threshold(np.uint8(mark_mask), 127, 255, 0)
+    ret, thresh = cv2.threshold(np.uint8(mark_mask), 0, 255, 0)
     im2, contours, hierarchy = cv2.findContours(thresh, 1, 2)
+
 
     cnt = contours[0]
     M = cv2.moments(cnt)
@@ -37,7 +38,7 @@ def getArea(mark_mask):
     cy = int(M['m01'] / M['m00'])
     area = cv2.contourArea(cnt)
 
-    if True:
+    if False:
         print("pos: x,y = ")
         print(cx)
         print(cy)
