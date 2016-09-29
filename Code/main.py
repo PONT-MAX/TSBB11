@@ -7,146 +7,46 @@
 from __future__ import absolute_import, print_function
 import cv2
 import numpy as np
+import random
 #import pyopencl as cl
 import init_v
 import visulation_export_image as vei
+import object
 from subprocess import call
 from PIL import Image
 from PIL import ImageOps
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
+
 
 map_source_directory = init_v.init_map_directory()
 map_name = map_source_directory[5]
-
+dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
 # For each map
 
+# object.getMarkers(map_name)
 
-# call type w/: dtm,dsm,dhm,cls,ortho
-dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif',-1)
-cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif',0)
-print(np.amax(cls))
-# extract tall bouldings
-# less then 2 meters high is not an object (house)
-dhm[dhm<1.5] = 0
-dhm_mask = np.copy(dhm)
-dhm_mask[dhm_mask>0] = 1
-cls[cls != 2] = 0
-cls[cls > 0] = 1
+#int32
+#markers = np.load('./numpy_arrays/markers.npy')
+#int32
+markers = np.load('./numpy_arrays/markers1.npy')
+#int8 3chanels
+obj_rgb = np.load('./numpy_arrays/obj_rgb.npy')
 
+markers[markers != 800] = 0
+markers[markers > 0] = 254
 
-obj_mask = cls*np.uint8(dhm_mask)
-# Put to 255 for show
-obj_mask[obj_mask>0] = 1
-#Image.fromarray(obj_mask).show()
-obj_mask_med = cv2.medianBlur(obj_mask,5)
-#Image.fromarray(obj_mask_med).show()
+cx,cy,area = object.getArea(markers)
 
-#dhm_obj = ((dhm*obj_mask_med)/np.amax(dhm))*255.0
-dhm_obj = (dhm*obj_mask_med)
-#Image.fromarray(dhm_obj).show()
+markers[markers > 0] = 1
+dhm_mask = np.float32(markers)*dhm
 
-
-obj = np.uint8(dhm_obj)
-
-# Plot histogram
-#plt.hist(obj.ravel(),256,[0,256])
-#plt.show()
-
-#blur = cv2.GaussianBlur(obj,(1,1),0)
-med = cv2.medianBlur(obj,9)
-
-#ret, thresh = cv2.threshold(med,1,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-ret, thresh = cv2.threshold(med,4,255,cv2.THRESH_BINARY)
-#thresh = cv2.adaptiveThreshold(med,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,0)
-
-#Image.fromarray(obj).show('obj')
-#Image.fromarray(thresh).show('threshold')
-
-
-# noise removal
-kernel = np.ones((3,3),np.uint8)
-# Tweeka itterations
-opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 2)
-
-# sure background area
-#Tweeka itreataions
-sure_bg = cv2.dilate(opening,kernel,iterations=3)
-
-# Finding sure foreground area
-dist_transform = cv2.distanceTransform(opening,cv2.DIST_L2,5)
-ret, sure_fg = cv2.threshold(dist_transform,0.20*dist_transform.max(),255,0)
+vol,max_height,avg_height,roof_type = object.getVolume(dhm_mask,area)
 
 
 
-# Finding unknown region
-sure_fg = np.uint8(sure_fg)
-unknown = cv2.subtract(sure_bg,sure_fg)
-
-# FIXA THRESHOLD
-
-# Image.fromarray(sure_fg).show('foreground')
-# Image.fromarray(sure_bg).show('background')
-#Image.fromarray(unknown).show('unknown')
-#Image.fromarray(dist_transform).show('dist')
 
 
-# Marker labelling
-ret, markers = cv2.connectedComponents(sure_fg)
-
-# Add one to all labels so that sure background is not 0, but 1
-markers = markers+1
-
-# Now, mark the region of unknown with zero
-markers[unknown==255] = 0
-
-
-# Watershed need colorimage
-obj_rgb  = cv2.cvtColor(obj, cv2.COLOR_GRAY2BGR)
-
-# Watershed
-markers1 = cv2.watershed(obj_rgb,markers)
-obj_rgb[markers1 == -1] = [255,255,0]
-
-Image.fromarray(obj_rgb).show()
-Image.fromarray(markers1).show()
-
-
-"""
-
-res = cv2.resize(sure_fg,None,fx=0.12, fy=0.12, interpolation = cv2.INTER_CUBIC)
-cv2.imshow('sure fore ground',res)
-cv2.waitKey(0)
-
-res = cv2.resize(sure_bg,None,fx=0.12, fy=0.12, interpolation = cv2.INTER_CUBIC)
-cv2.imshow('sure back ground',res)
-cv2.waitKey(0)
-
-res = cv2.resize(dist_transform,None,fx=0.12, fy=0.12, interpolation = cv2.INTER_CUBIC)
-cv2.imshow('dist_transform',res)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-
-
-
-# extract tall bouldings
-# less then 2 meters high is not an object (house)
-dhm_np[dhm_np<2] = 0
-
-# Extract object class
-cls_np[cls_np != 2] = 0
-cls_np[cls_np == 2] = 1
-dhm_obj_np = np.multiply(dhm_np,cls_np)
-print(cls_np.dtype)
-
-dhm_obj_cv = cv2.cvtColor(dhm_obj_np, cv2.COLOR_GRAY)
-res = cv2.resize(dhm_obj_cv,None,fx=0.1, fy=0.1, interpolation = cv2.INTER_CUBIC)
-cv2.imshow('image',res)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-
-"""
-
-
+#Image.fromarray(markers).show()
 
 # Edge detection adn extraction
 
@@ -159,3 +59,4 @@ cv2.destroyAllWindows()
 
 #vei.visulation_export(map_name)
 #call(["./visulation/lab"])
+
