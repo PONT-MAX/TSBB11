@@ -11,15 +11,20 @@ import init_v
 import visulation_export_image as vei
 from subprocess import call
 from PIL import Image
+import cv2
+import math
+import edges
 
 map_source_directory = init_v.init_map_directory()
 map_name = map_source_directory[5]
 
-"""
+
 # call type w/: dtm,dsm,dhm,cls,ortho
 dtm =   init_v.get_map_array('dtm', map_name, True)
 dhm =   init_v.get_map_array('dhm', map_name, True)
 cls =   init_v.get_map_array('cls', map_name, True)
+ortho =   init_v.get_map_array('ortho', map_name, True)
+
 
 
 # Pre processing
@@ -37,14 +42,14 @@ cls2[cls2 == 2] = 0
 cls[cls != 2] = 0
 cls[cls == 2] = 1
 
-
 object_mask = np.multiply(dhm,cls)
 object_mask[object_mask>0.0] = 2
 cls2 = cls2 + object_mask
 
-cls3 = vei.visulation_export_cls(cls2)
-vei.visulation_export_result('aux2', cls3)
-"""
+
+
+lines=edges.get_edges(ortho, object_mask)
+
 
 # Edge detection adn extraction
 
@@ -55,5 +60,10 @@ vei.visulation_export_result('aux2', cls3)
 # Export to visual
 
 
-vei.visulation_export(map_name)
+#vei.visulation_export(map_name)
 #call(["./visulation/lab"])
+
+
+
+#Image.fromarray(lines).show()
+
