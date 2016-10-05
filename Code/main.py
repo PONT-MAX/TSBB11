@@ -16,12 +16,15 @@ from subprocess import call
 from PIL import Image
 from PIL import ImageOps
 import time
-#from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
+
 
 
 map_source_directory = init_v.init_map_directory()
 map_name = map_source_directory[5]
 dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
+cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+print(cls.dtype)
 image_size = dhm.shape
 print(image_size)
 # For each map
@@ -44,19 +47,19 @@ markers[markers == 6] = 255
 Image.fromarray(markers).show()
 
 """
-
+"""
 
 t=time.time()
 not_in_Array = 0
 cutout_size = 1500
-"""
-cluster_data = np.zeros([5,1])
+
+cluster_data = np.zeros([10,1])
 
 print(cluster_data.shape)
 
 for x in range(2,np.amax(markers)):
 
-    cluster_data_temp = np.empty([5, 1])
+    cluster_data_temp = np.empty([10, 1])
 
     if not x%20:
         print(x)
@@ -77,26 +80,46 @@ for x in range(2,np.amax(markers)):
 
     cutout = np.copy(markers[row:row+cutout_size,col:col+cutout_size])
     dhm_cutout = np.copy(np.uint8(dhm[row:row+cutout_size,col:col+cutout_size]))
+    cls_cutout = np.copy(cls[row:row + cutout_size, col:col + cutout_size])
 
     #TO BE DONE: Extract classdata and orthodata
-    #cls_cutout = np.copy(cls[row:row + cutout_size, col:col + cutout_size])
     #ortho_cutout = np.copy(ortho[row:row + cutout_size, col:col + cutout_size])
 
     cutout[cutout != x] = 0
     cutout[cutout == x] = 1
-    cx,cy,area = object.getArea(cutout)
-    if area < 1.0 or cx > image_size or cy > image_size or cx < 0 or cy < 0:
-        print( (area, cx ,cy))
-        continue
+
+
+    #cx,cy = object.getArea(cutout)
+
 
     dhm_mask = np.uint8(cutout)*dhm_cutout
-    vol,max_height,avg_height,roof_type = object.getVolume(dhm_mask,area)
+    vol,max_height,avg_height,roof_type,area = object.getVolume(dhm_mask)
+
+    if area < 1.0:# or cx > image_size or cy > image_size or cx < 0 or cy < 0:
+        print( area)
+        continue
 
     cluster_data_temp[0,0] = area
     cluster_data_temp[1,0] = vol
     cluster_data_temp[2,0] = max_height
     cluster_data_temp[3,0] = avg_height
     cluster_data_temp[4,0] = roof_type
+    #most reapeted haighet most repeted
+
+
+    kernel = np.ones((5, 5), np.uint8)
+    cutout_2 = cv2.dilate(np.uint8(cutout),kernel,  iterations=3)
+    cutout_2 = cutout_2 - np.uint8(cutout)
+    cls_mask = cutout_2*cls_cutout
+    terrain, forrest, road, water, object_cls = object.getNeighbourClass(cls_mask)
+
+    cluster_data_temp[5, 0] = terrain
+    cluster_data_temp[6, 0] = forrest
+    cluster_data_temp[7, 0] = road
+    cluster_data_temp[8, 0] = water
+    cluster_data_temp[9, 0] = object_cls
+
+
     cluster_data = np.hstack((cluster_data, cluster_data_temp))
 
 
@@ -104,12 +127,29 @@ for x in range(2,np.amax(markers)):
 cluster_data = np.delete(cluster_data,0,1)
 print("Time:")
 print(time.time()-t)
-np.save('./numpy_arrays/cluster_data.npy', cluster_data)
+#np.save('./numpy_arrays/cluster_data.npy', cluster_data)
+
 """
 
 cluster_data = np.load('./numpy_arrays/cluster_data.npy')
 print("data size:")
 print (cluster_data.shape)
+
+plt.figure(1)
+plt.plot(cluster_data[0,:],cluster_data[8,:],'ro')
+plt.ylabel('area vs water')
+
+plt.figure(2)
+plt.plot(cluster_data[2,:],cluster_data[4,:],'ro')
+plt.ylabel('height vs type')
+
+plt.figure(3)
+plt.plot(cluster_data[0,:],cluster_data[9,:],'ro')
+plt.ylabel('vol vs cls')
+
+plt.show()
+
+
 
 """
 

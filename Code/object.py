@@ -2,17 +2,31 @@ import numpy as np
 from PIL import Image
 import cv2
 
-def getVolume(dhm_mask,area):
+def getNeighbourClass(aux_mask):
+    # Return procentage of all classes surounding the current object
+
+    sum_of_all = np.count_nonzero(aux_mask)
+
+    terrain = np.sum(aux_mask[aux_mask == 1])/sum_of_all
+    object_cls = np.sum(aux_mask[aux_mask == 2])/sum_of_all/2
+    water = np.sum(aux_mask[aux_mask == 4])/sum_of_all/4
+    road = np.sum(aux_mask[aux_mask == 5])/sum_of_all/5
+    forest = np.sum(aux_mask[aux_mask == 3])/sum_of_all/3
+
+    return terrain,forest,road,water,object_cls
+
+def getVolume(dhm_mask):
     vol = np.sum(dhm_mask)
-    max_height = np.max(dhm_mask)
-    avg_height = vol / area
+    max_height = np.amax(dhm_mask)
+    area = np.count_nonzero(dhm_mask)
+    avg_height = vol/area
 
     #Do func gets roof type
     # res 0   = platt
     # res 0.5 = sluttande
     # res 1.0 = extremt sluttande (typ kyrka)
 
-    roof_type = (max_height-avg_height)/max_height
+    roof_type = (max_height - avg_height)/((float)(max_height))
 
     if False:
         print("Vol=  ")
@@ -25,7 +39,7 @@ def getVolume(dhm_mask,area):
         print (roof_type)
 
 
-    return (vol,max_height,avg_height,roof_type)
+    return (vol,max_height,avg_height,roof_type,area)
 
 def getArea(mark_mask):
     ret, thresh = cv2.threshold(np.uint8(mark_mask), 0, 255, 0)
@@ -37,20 +51,16 @@ def getArea(mark_mask):
     if M['m00'] > 0.0:
         cx = int(M['m10'] / M['m00'])
         cy = int(M['m01'] / M['m00'])
-        area = cv2.contourArea(cnt)
     else:
         cx = 0.0
         cy = 0.0
-        area = 0.0
 
     if False:
         print("pos: x,y = ")
         print(cx)
         print(cy)
-        print("Area")
-        print(area)
 
-    return (cx,cy,area)
+    return (cx,cy)
 
 def getMarkers(map_name):
     # call type w/: dtm,dsm,dhm,cls,ortho
