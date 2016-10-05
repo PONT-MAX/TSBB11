@@ -4,4 +4,12 @@
 *.DS_Store
 *.bmp
 *.png
+*.pyc
+**/MicroGlut.c
+**/MicroGLut.h
+**/makefile
+**/lab.c
+**/lab
+
+
 
