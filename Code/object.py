@@ -34,9 +34,14 @@ def getArea(mark_mask):
 
     cnt = contours[0]
     M = cv2.moments(cnt)
-    cx = int(M['m10'] / M['m00'])
-    cy = int(M['m01'] / M['m00'])
-    area = cv2.contourArea(cnt)
+    if M['m00'] > 0.0:
+        cx = int(M['m10'] / M['m00'])
+        cy = int(M['m01'] / M['m00'])
+        area = cv2.contourArea(cnt)
+    else:
+        cx = 0.0
+        cy = 0.0
+        area = 0.0
 
     if False:
         print("pos: x,y = ")

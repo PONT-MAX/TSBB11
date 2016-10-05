@@ -46,13 +46,17 @@ Image.fromarray(markers).show()
 """
 
 
-print("max")
-print(np.amax(markers))
 t=time.time()
 not_in_Array = 0
 cutout_size = 1500
+"""
+cluster_data = np.zeros([5,1])
 
-for x in range(2,100):
+print(cluster_data.shape)
+
+for x in range(2,np.amax(markers)):
+
+    cluster_data_temp = np.empty([5, 1])
 
     if not x%20:
         print(x)
@@ -81,16 +85,31 @@ for x in range(2,100):
     cutout[cutout != x] = 0
     cutout[cutout == x] = 1
     cx,cy,area = object.getArea(cutout)
+    if area < 1.0 or cx > image_size or cy > image_size or cx < 0 or cy < 0:
+        print( (area, cx ,cy))
+        continue
+
     dhm_mask = np.uint8(cutout)*dhm_cutout
     vol,max_height,avg_height,roof_type = object.getVolume(dhm_mask,area)
 
+    cluster_data_temp[0,0] = area
+    cluster_data_temp[1,0] = vol
+    cluster_data_temp[2,0] = max_height
+    cluster_data_temp[3,0] = avg_height
+    cluster_data_temp[4,0] = roof_type
+    cluster_data = np.hstack((cluster_data, cluster_data_temp))
+
+
+
+cluster_data = np.delete(cluster_data,0,1)
 print("Time:")
 print(time.time()-t)
-print("Not in arr:")
-print(not_in_Array)
+np.save('./numpy_arrays/cluster_data.npy', cluster_data)
+"""
 
-
-
+cluster_data = np.load('./numpy_arrays/cluster_data.npy')
+print("data size:")
+print (cluster_data.shape)
 
 """
 
