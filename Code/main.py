@@ -64,6 +64,8 @@ lines=edges.get_edges(ortho, object_mask)
 #call(["./visulation/lab"])
 
 
+Image.fromarray(lines).show()
 
-#Image.fromarray(lines).show()
+#cv2.imshow('hough', lines)
+#cv2.waitKey(0)
 
