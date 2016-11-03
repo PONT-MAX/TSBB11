@@ -17,18 +17,22 @@ from PIL import Image
 from PIL import ImageOps
 import time
 from matplotlib import pyplot as plt
+import seaborn as sns
+import hdbscan
+from sklearn.manifold import TSNE
+from sklearn.datasets import load_digits
 
-
+"""
 
 map_source_directory = init_v.init_map_directory()
 map_name = map_source_directory[5]
 dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
+dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
 cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
-print(cls.dtype)
 image_size = dhm.shape
 print(image_size)
 # For each map
-
+"""
 # object.getMarkers(map_name)
 
 #int32
@@ -48,106 +52,155 @@ Image.fromarray(markers).show()
 
 """
 """
-
+NUMBER_OF_FEATURES = 12
 t=time.time()
 not_in_Array = 0
 cutout_size = 1500
 
-cluster_data = np.zeros([10,1])
+cluster_data = np.zeros([NUMBER_OF_FEATURES,1])
 
 print(cluster_data.shape)
 
 for x in range(2,np.amax(markers)):
 
-    cluster_data_temp = np.empty([10, 1])
+    # Temporary holder for fueatures
+    cluster_data_temp = np.empty([NUMBER_OF_FEATURES, 1])
 
-    if not x%20:
-        print(x)
-        print(not_in_Array)
+    # Print Progress
+    object.getProgress(x,20)
 
+    # Check if object exists
     indices = np.argwhere(markers == x)
-
     if not np.sum(indices):
-        not_in_Array += 1
-        print("NOT")
-        print(x)
         continue;
 
-    row = indices.item(0) - cutout_size/2
-    col = indices.item(1) - cutout_size/2
-    row = max(0,min(row,(image_size[0] - cutout_size)))
-    col = max(0,min(col,(image_size[0] - cutout_size)))
 
-    cutout = np.copy(markers[row:row+cutout_size,col:col+cutout_size])
-    dhm_cutout = np.copy(np.uint8(dhm[row:row+cutout_size,col:col+cutout_size]))
-    cls_cutout = np.copy(cls[row:row + cutout_size, col:col + cutout_size])
+    # NEW FEATURE
+    # VART AR objectet GLOBALT?
+    # Fraga om orientationproblemet
+    # NS till EW
+    # Shape rund fyrkantig
+    # Avlang eler uniform svd
+    # Ihalig eller massiv
+    # PCA - uppdelning ?
 
-    #TO BE DONE: Extract classdata and orthodata
-    #ortho_cutout = np.copy(ortho[row:row + cutout_size, col:col + cutout_size])
+    # Find where the object exsists
+    row,col = object.getPixel(indices,cutout_size,image_size)
 
-    cutout[cutout != x] = 0
-    cutout[cutout == x] = 1
+    # Get coutout mask and maps
+    dhm_cutout, dsm_cutout, cls_cutout, cutout = object.getCutOut(markers,dhm,dsm,cls,row,col,x,cutout_size)
 
-
+    # Centrum of object
     #cx,cy = object.getArea(cutout)
 
-
-    dhm_mask = np.uint8(cutout)*dhm_cutout
+    # Get features from Height map
+    dhm_mask = np.uint8(cutout) * dhm_cutout
     vol,max_height,avg_height,roof_type,area = object.getVolume(dhm_mask)
 
+    # Check if data is good
     if area < 1.0:# or cx > image_size or cy > image_size or cx < 0 or cy < 0:
         print( area)
         continue
 
-    cluster_data_temp[0,0] = area
-    cluster_data_temp[1,0] = vol
-    cluster_data_temp[2,0] = max_height
-    cluster_data_temp[3,0] = avg_height
-    cluster_data_temp[4,0] = roof_type
-    #most reapeted haighet most repeted
+    # Get procentage of each class Neighbouring the object
+    terrain, forrest, road, water, object_cls = object.getNeighbourClass(cutout, cls_cutout)
 
+    # Get data from DSM
+    dsm_mask = np.uint8(cutout) * dsm_cutout
+    sea_level, ground_slope = object.getDsmFeatures(dsm_mask)
 
-    kernel = np.ones((5, 5), np.uint8)
-    cutout_2 = cv2.dilate(np.uint8(cutout),kernel,  iterations=3)
-    cutout_2 = cutout_2 - np.uint8(cutout)
-    cls_mask = cutout_2*cls_cutout
-    terrain, forrest, road, water, object_cls = object.getNeighbourClass(cls_mask)
-
+    # Add data to temporary array
+    cluster_data_temp[0, 0] = area
+    cluster_data_temp[1, 0] = vol
+    cluster_data_temp[2, 0] = max_height
+    cluster_data_temp[3, 0] = avg_height
+    cluster_data_temp[4, 0] = roof_type
     cluster_data_temp[5, 0] = terrain
     cluster_data_temp[6, 0] = forrest
     cluster_data_temp[7, 0] = road
     cluster_data_temp[8, 0] = water
     cluster_data_temp[9, 0] = object_cls
+    cluster_data_temp[10, 0] = ground_slope
+    cluster_data_temp[11, 0] = sea_level
 
+    # Get info from DTM (Height, slope)
+    # Orientation fit line OpenCV
+    # Feature: Not rectangle, circle
 
     cluster_data = np.hstack((cluster_data, cluster_data_temp))
 
 
 
+
+
+
+
+# Clean and normalize clusterdata
 cluster_data = np.delete(cluster_data,0,1)
+
+for x in range(0,NUMBER_OF_FEATURES):
+    max_value = np.amax(cluster_data[x, :])
+    if max_value > 0:
+        cluster_data[x, :] /= max_value
+    else:
+        cluster_data[x, :] = 0
+
+
+
 print("Time:")
 print(time.time()-t)
 #np.save('./numpy_arrays/cluster_data.npy', cluster_data)
 
+
 """
 
-cluster_data = np.load('./numpy_arrays/cluster_data.npy')
+cluster_data = np.transpose(np.load('./numpy_arrays/cluster_data.npy'))
 print("data size:")
 print (cluster_data.shape)
-
+"""
 plt.figure(1)
-plt.plot(cluster_data[0,:],cluster_data[8,:],'ro')
-plt.ylabel('area vs water')
+plt.plot(cluster_data[0, :], cluster_data[2, :], 'ro')
+plt.ylabel('area vs max h')
 
 plt.figure(2)
-plt.plot(cluster_data[2,:],cluster_data[4,:],'ro')
+plt.plot(cluster_data[2, :], cluster_data[4, :], 'ro')
 plt.ylabel('height vs type')
 
 plt.figure(3)
-plt.plot(cluster_data[0,:],cluster_data[9,:],'ro')
-plt.ylabel('vol vs cls')
+plt.plot(cluster_data[0, :], cluster_data[11, :], 'ro')
+plt.ylabel('vol vs dsm')
 
 plt.show()
+"""
+
+clusterer = hdbscan.HDBSCAN(algorithm='best',metric='euclidean',min_cluster_size=2,min_samples=2,alpha=1.0)
+    #HDBSCAN(algorithm='best', alpha=1.0, approx_min_span_tree=True,
+    #gen_min_span_tree=False, leaf_size=40, memory=Memory(cachedir=None),
+    #metric='euclidean', min_cluster_size=5, min_samples=None, p=None)
+
+clusterer.fit(cluster_data)
+print(np.amax(clusterer.labels_))
+
+
+projection = TSNE().fit_transform(cluster_data)
+
+nbr_of_classes = np.amax(clusterer.labels_)
+
+# Lables
+histo = np.bincount(clusterer.labels_+1)
+print((-1, "-", histo[0]))
+
+color_palette = sns.color_palette('Paired', nbr_of_classes+1)
+cluster_colors = [color_palette[x] if x >= 0
+                  else (0.5, 0.5, 0.5)
+                  for x in clusterer.labels_]
+cluster_member_colors = [sns.desaturate(x, p) for x, p in
+                         zip(cluster_colors, clusterer.probabilities_)]
+plt.scatter(*projection.T, s=50, linewidth=0, c=cluster_member_colors, alpha=0.25)
+
+
+plt.show()
+
 
 
 

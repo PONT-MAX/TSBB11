@@ -2,24 +2,63 @@ import numpy as np
 from PIL import Image
 import cv2
 
-def getNeighbourClass(aux_mask):
+
+def getProgress(x,delay):
+    if not x % delay:
+        print(x)
+
+def getPixel(indices,cutout_size,image_size):
+    row = indices.item(0) - cutout_size / 2
+    col = indices.item(1) - cutout_size / 2
+    row = max(0, min(row, (image_size[0] - cutout_size)))
+    col = max(0, min(col, (image_size[0] - cutout_size)))
+    return (row,col)
+
+def getCutOut(markers,dhm,dsm,cls,row,col,x,cutout_size):
+    cutout = np.copy(markers[row:row + cutout_size, col:col + cutout_size])
+    dhm_cutout = np.uint8(dhm[row:row + cutout_size, col:col + cutout_size])
+    dsm_cutout = np.uint8(dsm[row:row + cutout_size, col:col + cutout_size])
+    cls_cutout = cls[row:row + cutout_size, col:col + cutout_size]
+
+    # TO BE DONE: Extract classdata and orthodata
+    # ortho_cutout = np.copy(ortho[row:row + cutout_size, col:col + cutout_size])
+
+    cutout[cutout != x] = 0
+    cutout[cutout == x] = 1
+
+    return dhm_cutout,dsm_cutout, cls_cutout, cutout
+
+def getDsmFeatures(dsm_mask):
+
+    sea_level = np.mean(dsm_mask[dsm_mask > 0])
+    sea_max = np.amax(dsm_mask)
+    ground_slope = (sea_max-sea_level)/sea_max
+    return sea_max, ground_slope
+
+
+def getNeighbourClass(cutout,cls_cutout):
     # Return procentage of all classes surounding the current object
 
+    kernel = np.ones((5, 5), np.uint8)
+    cutout_2 = cv2.dilate(np.uint8(cutout),kernel,  iterations=3)
+    cutout_2 = cutout_2 - np.uint8(cutout)
+
+    aux_mask = cutout_2*cls_cutout
     sum_of_all = np.count_nonzero(aux_mask)
 
-    terrain = np.sum(aux_mask[aux_mask == 1])/sum_of_all
+    terrain    = np.sum(aux_mask[aux_mask == 1])/sum_of_all
     object_cls = np.sum(aux_mask[aux_mask == 2])/sum_of_all/2
-    water = np.sum(aux_mask[aux_mask == 4])/sum_of_all/4
-    road = np.sum(aux_mask[aux_mask == 5])/sum_of_all/5
-    forest = np.sum(aux_mask[aux_mask == 3])/sum_of_all/3
+    water      = np.sum(aux_mask[aux_mask == 4])/sum_of_all/4
+    road       = np.sum(aux_mask[aux_mask == 5])/sum_of_all/5
+    forest     = np.sum(aux_mask[aux_mask == 3])/sum_of_all/3
 
     return terrain,forest,road,water,object_cls
 
 def getVolume(dhm_mask):
-    vol = np.sum(dhm_mask)
+    vol = np.sum(dhm_mask)*0.25 # Normalize for 0.25m^2 ground pixel
     max_height = np.amax(dhm_mask)
-    area = np.count_nonzero(dhm_mask)
-    avg_height = vol/area
+    area = np.count_nonzero(dhm_mask)*0.25 # Normalize for 0.25m^2 ground pixel
+    avg_height = vol / area
 
     #Do func gets roof type
     # res 0   = platt
