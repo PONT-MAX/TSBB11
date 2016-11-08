@@ -13,7 +13,7 @@ from subprocess import call
 from PIL import Image
 import cv2
 import math
-import edges
+import extract_buildings
 
 map_source_directory = init_v.init_map_directory()
 map_name = map_source_directory[5]
@@ -48,7 +48,7 @@ cls2 = cls2 + object_mask
 
 
 
-lines=edges.get_edges(ortho, object_mask)
+lines=extract_buildings.get_buildings(ortho, object_mask)
 
 
 # Edge detection adn extraction
