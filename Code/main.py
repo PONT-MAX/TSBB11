@@ -37,7 +37,7 @@ map_source_directory = init_v.init_map_directory()
 NUMBER_OF_FEATURES = 17
 feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
 
-
+"""
 for x in range(0,17):
     # Load Maps
     print("Map: ", x)
@@ -62,8 +62,8 @@ feature_data = np.delete(feature_data, 0, 1)
 print("Shape FD = ", feature_data.shape)
 #np.save('./numpy_arrays/feature_data_all_4.npy', feature_data)
 
-
 """
+
 cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all_4.npy'))
 
 
@@ -84,60 +84,24 @@ print(max(cluster_data[:,2]))
 
 print(cluster_data.shape)
 
-"""
-"""
 
-Fixa metric
-Normalizera
-hitta vilka som gor nagon skillnad,
-Bara meter?
-bara 0,1
+#best_mcs,best_ms,best_P = object.findOptimalHdbParameters(cluster_data)
+best_mcs = 29
+best_ms = 8
 
-# print(" Starting HDBSCAN, data size:", cluster_data.shape)
-hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=62, min_samples=1, alpha=1.0)
-hd_cluster.fit(cluster_data)
-
-# Lables
 stat = True
 print_all_statistic = True
 visulize_clustering = False
-proc, nbr_cls = object.printHdbscanResult(hd_cluster, cluster_data, stat, print_all_statistic, visulize_clustering,
-                                          141, 1, 5)
-"""
+hd_cluster = object.printOptimalHdb(cluster_data,best_mcs,best_ms,stat,print_all_statistic,visulize_clustering)
 
-#141 1 11
-#161 1
-for mcs in range(10,440,20):
-    print("MCS: ", mcs)
-    best_P = 50
-    for ms in range(1, mcs, 20):
-
-        # print(" Starting HDBSCAN, data size:", cluster_data.shape)
-        hd_cluster = hdbscan.HDBSCAN(algorithm='best',metric='mahalanobis',min_cluster_size=mcs,min_samples=ms,alpha=1.0)
-        hd_cluster.fit(cluster_data)
-
-        # Lables
-        stat = False
-        print_all_statistic = False
-        visulize_clustering = False
-        proc, nbr_cls = object.printHdbscanResult(hd_cluster,cluster_data,stat,print_all_statistic,visulize_clustering,best_P,mcs,ms)
-
-        if nbr_cls > 2 and nbr_cls < 175 and proc < 750:
-            print("MCS: ", mcs, " & MS: ", ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
-            best_P = proc
-
-
-"""
 # Add map number and class to each feature
 cluster_data_meta[:,1] = np.copy(hd_cluster.labels_)
 cluster_data = np.hstack((cluster_data, cluster_data_meta))
 
-
-for map_c in range(9,13):
+for map_c in range(5,6):
 
     map_name = map_source_directory[map_c]
     ort = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', -1)/2
-
 
     xc,yc = object.getCorrectGlobalMapPosition(map_c)
     print(xc,yc)
@@ -152,10 +116,10 @@ for map_c in range(9,13):
             #print("x = ", x, "  y = ", y, "   ||| xc,yc = ", xc, yc)
 
 
-    Image.fromarray(ort).show()
+    Image.fromarray(ort.astype('uint8')).show()
 
 
-"""
+
 
 """
 
