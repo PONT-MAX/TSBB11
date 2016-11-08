@@ -21,143 +21,145 @@ import seaborn as sns
 import hdbscan
 from sklearn.manifold import TSNE
 from sklearn.datasets import load_digits
+from sklearn.preprocessing import StandardScaler
+from sklearn import preprocessing
 
-"""
+
+#################################
+
+# Load map names
 
 map_source_directory = init_v.init_map_directory()
-map_name = map_source_directory[5]
-dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
-dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
-cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
-image_size = dhm.shape
-print(image_size)
-# For each map
-"""
-# object.getMarkers(map_name)
 
-#int32
-#markers = np.load('./numpy_arrays/markers.npy')
-#int32
-markers = np.load('./numpy_arrays/markers1.npy')
-#int8 3chanels
-obj_rgb = np.load('./numpy_arrays/obj_rgb.npy')
-"""
-indices = np.argwhere(markers==6)
-print(indices.item(0))
-print(indices.item(1))
-markers[markers != 6] = 0
-markers[markers == 6] = 255
 
-Image.fromarray(markers).show()
+
+# Number of features getting extracted, and preparing feature holder
+NUMBER_OF_FEATURES = 17
+feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
+
+
+for x in range(0,17):
+    # Load Maps
+    print("Map: ", x)
+    map_name = map_source_directory[x]
+    dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
+    dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
+    cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+    image_size = dhm.shape
+
+    print("Map: ", x, "Getting markers")
+    # Get markers from map (Watershed) this stage is performed by other function later on
+    markers = object.getMarkers(map_name)
+
+    print("Map: ", x, "Starting extract Features")
+    #feature_data_temp = object.extractFeatureData(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,x)
+    #feature_data = np.hstack((feature_data, feature_data_temp))
+
+
+# After all features fro all maps are extracted
+# Clean featuredata
+feature_data = np.delete(feature_data, 0, 1)
+print("Shape FD = ", feature_data.shape)
+#np.save('./numpy_arrays/feature_data_all_4.npy', feature_data)
+
 
 """
-"""
-NUMBER_OF_FEATURES = 12
-t=time.time()
-not_in_Array = 0
-cutout_size = 1500
+cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all_4.npy'))
 
-cluster_data = np.zeros([NUMBER_OF_FEATURES,1])
+
+cluster_data_meta = np.empty([max(cluster_data.shape), 4])
+cluster_data_meta[:, 0] = np.copy(cluster_data[:,16])
+cluster_data_meta[:, 2] = np.copy(cluster_data[:,12])
+cluster_data_meta[:, 3] = np.copy(cluster_data[:,13])
+cluster_data = np.delete(cluster_data, 16, 1)
+cluster_data = np.delete(cluster_data, 12, 1)
+cluster_data = np.delete(cluster_data, 12, 1)
+
+print(max(cluster_data[:,4]))
+print(max(cluster_data[:,2]))
+#for x in range(0,min(cluster_data.shape)):
+ #   print(cluster_data[4000:4020, x])
+  #  cluster_data[:,x] = cluster_data[:,x]/max(cluster_data[:,x])
+   # print(cluster_data[4000:4020, x])
 
 print(cluster_data.shape)
 
-for x in range(2,np.amax(markers)):
+"""
+"""
 
-    # Temporary holder for fueatures
-    cluster_data_temp = np.empty([NUMBER_OF_FEATURES, 1])
+Fixa metric
+Normalizera
+hitta vilka som gor nagon skillnad,
+Bara meter?
+bara 0,1
 
-    # Print Progress
-    object.getProgress(x,20)
+# print(" Starting HDBSCAN, data size:", cluster_data.shape)
+hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=62, min_samples=1, alpha=1.0)
+hd_cluster.fit(cluster_data)
 
-    # Check if object exists
-    indices = np.argwhere(markers == x)
-    if not np.sum(indices):
-        continue;
+# Lables
+stat = True
+print_all_statistic = True
+visulize_clustering = False
+proc, nbr_cls = object.printHdbscanResult(hd_cluster, cluster_data, stat, print_all_statistic, visulize_clustering,
+                                          141, 1, 5)
+"""
 
+#141 1 11
+#161 1
+for mcs in range(10,440,20):
+    print("MCS: ", mcs)
+    best_P = 50
+    for ms in range(1, mcs, 20):
 
-    # NEW FEATURE
-    # VART AR objectet GLOBALT?
-    # Fraga om orientationproblemet
-    # NS till EW
-    # Shape rund fyrkantig
-    # Avlang eler uniform svd
-    # Ihalig eller massiv
-    # PCA - uppdelning ?
+        # print(" Starting HDBSCAN, data size:", cluster_data.shape)
+        hd_cluster = hdbscan.HDBSCAN(algorithm='best',metric='mahalanobis',min_cluster_size=mcs,min_samples=ms,alpha=1.0)
+        hd_cluster.fit(cluster_data)
 
-    # Find where the object exsists
-    row,col = object.getPixel(indices,cutout_size,image_size)
+        # Lables
+        stat = False
+        print_all_statistic = False
+        visulize_clustering = False
+        proc, nbr_cls = object.printHdbscanResult(hd_cluster,cluster_data,stat,print_all_statistic,visulize_clustering,best_P,mcs,ms)
 
-    # Get coutout mask and maps
-    dhm_cutout, dsm_cutout, cls_cutout, cutout = object.getCutOut(markers,dhm,dsm,cls,row,col,x,cutout_size)
-
-    # Centrum of object
-    #cx,cy = object.getArea(cutout)
-
-    # Get features from Height map
-    dhm_mask = np.uint8(cutout) * dhm_cutout
-    vol,max_height,avg_height,roof_type,area = object.getVolume(dhm_mask)
-
-    # Check if data is good
-    if area < 1.0:# or cx > image_size or cy > image_size or cx < 0 or cy < 0:
-        print( area)
-        continue
-
-    # Get procentage of each class Neighbouring the object
-    terrain, forrest, road, water, object_cls = object.getNeighbourClass(cutout, cls_cutout)
-
-    # Get data from DSM
-    dsm_mask = np.uint8(cutout) * dsm_cutout
-    sea_level, ground_slope = object.getDsmFeatures(dsm_mask)
-
-    # Add data to temporary array
-    cluster_data_temp[0, 0] = area
-    cluster_data_temp[1, 0] = vol
-    cluster_data_temp[2, 0] = max_height
-    cluster_data_temp[3, 0] = avg_height
-    cluster_data_temp[4, 0] = roof_type
-    cluster_data_temp[5, 0] = terrain
-    cluster_data_temp[6, 0] = forrest
-    cluster_data_temp[7, 0] = road
-    cluster_data_temp[8, 0] = water
-    cluster_data_temp[9, 0] = object_cls
-    cluster_data_temp[10, 0] = ground_slope
-    cluster_data_temp[11, 0] = sea_level
-
-    # Get info from DTM (Height, slope)
-    # Orientation fit line OpenCV
-    # Feature: Not rectangle, circle
-
-    cluster_data = np.hstack((cluster_data, cluster_data_temp))
+        if nbr_cls > 2 and nbr_cls < 175 and proc < 750:
+            print("MCS: ", mcs, " & MS: ", ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
+            best_P = proc
 
 
+"""
+# Add map number and class to each feature
+cluster_data_meta[:,1] = np.copy(hd_cluster.labels_)
+cluster_data = np.hstack((cluster_data, cluster_data_meta))
 
 
+for map_c in range(9,13):
+
+    map_name = map_source_directory[map_c]
+    ort = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', -1)/2
 
 
+    xc,yc = object.getCorrectGlobalMapPosition(map_c)
+    print(xc,yc)
+    c = 0
+    for feat in range(0,8210):
+        if cluster_data[feat,14-5] == map_c:
+            c += 1
+            x = (int)(cluster_data[feat, 17-5] - xc)
+            y = (int)(cluster_data[feat, 16-5] - yc)
+            b,g,r = object.getColor(cluster_data[feat, 15-5])
+            cv2.rectangle(ort, (x, y), (x+50, y+50), (b, g, r), 2)
+            #print("x = ", x, "  y = ", y, "   ||| xc,yc = ", xc, yc)
 
-# Clean and normalize clusterdata
-cluster_data = np.delete(cluster_data,0,1)
 
-for x in range(0,NUMBER_OF_FEATURES):
-    max_value = np.amax(cluster_data[x, :])
-    if max_value > 0:
-        cluster_data[x, :] /= max_value
-    else:
-        cluster_data[x, :] = 0
-
-
-
-print("Time:")
-print(time.time()-t)
-#np.save('./numpy_arrays/cluster_data.npy', cluster_data)
+    Image.fromarray(ort).show()
 
 
 """
 
-cluster_data = np.transpose(np.load('./numpy_arrays/cluster_data.npy'))
-print("data size:")
-print (cluster_data.shape)
 """
+
+
 plt.figure(1)
 plt.plot(cluster_data[0, :], cluster_data[2, :], 'ro')
 plt.ylabel('area vs max h')
@@ -171,54 +173,8 @@ plt.plot(cluster_data[0, :], cluster_data[11, :], 'ro')
 plt.ylabel('vol vs dsm')
 
 plt.show()
-"""
-
-clusterer = hdbscan.HDBSCAN(algorithm='best',metric='euclidean',min_cluster_size=2,min_samples=2,alpha=1.0)
-    #HDBSCAN(algorithm='best', alpha=1.0, approx_min_span_tree=True,
-    #gen_min_span_tree=False, leaf_size=40, memory=Memory(cachedir=None),
-    #metric='euclidean', min_cluster_size=5, min_samples=None, p=None)
-
-clusterer.fit(cluster_data)
-print(np.amax(clusterer.labels_))
-
-
-projection = TSNE().fit_transform(cluster_data)
-
-nbr_of_classes = np.amax(clusterer.labels_)
-
-# Lables
-histo = np.bincount(clusterer.labels_+1)
-print((-1, "-", histo[0]))
-
-color_palette = sns.color_palette('Paired', nbr_of_classes+1)
-cluster_colors = [color_palette[x] if x >= 0
-                  else (0.5, 0.5, 0.5)
-                  for x in clusterer.labels_]
-cluster_member_colors = [sns.desaturate(x, p) for x, p in
-                         zip(cluster_colors, clusterer.probabilities_)]
-plt.scatter(*projection.T, s=50, linewidth=0, c=cluster_member_colors, alpha=0.25)
-
-
-plt.show()
-
-
-
-
-"""
-
-
-#Image.fromarray(markers).show()
-
-# Edge detection adn extraction
-
-# MOG
-
-# Create new map on dtm
-
-# Export to visual
-
 
 #vei.visulation_export(map_name)
 #call(["./visulation/lab"])
-
 """
+
