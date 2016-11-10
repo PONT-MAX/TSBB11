@@ -70,7 +70,7 @@ def getNeighbourClass(cutout,cls_cutout):
     # Return procentage of all classes surounding the current object
 
     kernel = np.ones((5, 5), np.uint8)
-    cutout_2 = cv2.dilate(np.uint8(cutout),kernel,  iterations=3)
+    cutout_2 = cv2.dilate(np.uint8(cutout),kernel,  iterations=5)
     cutout_2 = cutout_2 - np.uint8(cutout)
     aux_mask = cutout_2*cls_cutout
     sum_of_all = np.count_nonzero(aux_mask)
@@ -112,12 +112,12 @@ def getVolume(dhm_mask):
         print (roof_type)
 
 
-    return (vol,max_height,avg_height,roof_type,area)
+    return (max_height,avg_height,area)
 
 def getArea(mark_mask):
     ret, thresh = cv2.threshold(np.uint8(mark_mask), 0, 255, 0)
     im2, contours, hierarchy = cv2.findContours(thresh, 1, 2)
-    good = 0
+
     cnt = contours[0]
     if max(cnt.shape) > 5:
         (x, y), (MA, ma), angle =  cv2.fitEllipse(cnt)
@@ -142,7 +142,7 @@ def getArea(mark_mask):
         print("ma = ", ma)
         print(contour_ratio)
 
-    return angle, contour_ratio, good
+    return contour_ratio, good
 
 def getMarkers(map_name):
     # call type w/: dtm,dsm,dhm,cls,ortho
@@ -165,7 +165,7 @@ def getMarkers(map_name):
 
     # dhm_obj = ((dhm*obj_mask_med)/np.amax(dhm))*255.0
     dhm_obj = (dhm * obj_mask_med)
-    Image.fromarray(dhm_obj*255).show()
+    #Image.fromarray(dhm_obj*255).show()
 
 
     obj = np.uint8(dhm_obj)
@@ -185,6 +185,7 @@ def getMarkers(map_name):
     #Image.fromarray(thresh).show('threshold')
 
 
+
     # noise removal
     kernel = np.ones((3, 3), np.uint8)
     # Tweeka itterations
@@ -196,7 +197,7 @@ def getMarkers(map_name):
 
     # Finding sure foreground area
     dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
-    ret, sure_fg = cv2.threshold(dist_transform, 0.10 * dist_transform.max(), 255, 0)
+    ret, sure_fg = cv2.threshold(dist_transform, 0.2 * dist_transform.max(), 255, 0)
 
     # Finding unknown region
     sure_fg = np.uint8(sure_fg)
@@ -204,8 +205,8 @@ def getMarkers(map_name):
 
     # FIXA THRESHOLD
 
-    Image.fromarray(sure_fg).show('foreground')
-    Image.fromarray(sure_bg).show('background')
+    #Image.fromarray(sure_fg).show('foreground')
+    #Image.fromarray(sure_bg).show('background')
     #Image.fromarray(unknown).show('unknown')
     #Image.fromarray(dist_transform).show('dist')
 
@@ -224,9 +225,10 @@ def getMarkers(map_name):
 
     # Watershed
     markers1 = cv2.watershed(obj_rgb, markers)
-    obj_rgb[markers1 == -1] = [255, 255, 0]
 
+    #obj_rgb[markers1 == -1] = [255, 255, 0]
     #Image.fromarray(obj_rgb).show()
+
     #Image.fromarray(markers1).show()
 
     # Binary data
@@ -282,35 +284,35 @@ def extractFeatureData(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,map_id):
     image_size = dhm.shape
     to_range = np.amax(markers) + 1
 
-    for x in range(2, to_range):
+    for marker_id in range(2, to_range):
 
         # Temporary holder for fueatures
         feature_data_temp = np.empty([NUMBER_OF_FEATURES, 1])
 
         # Print Progress
-        getProgress(x, 50)
+        getProgress(marker_id, 50)
 
         # Check if object exists
-        indices = np.argwhere(markers == x)
+        indices = np.argwhere(markers == marker_id)
         if not np.sum(indices):
             continue
 
         # Find where the object exsists
         row, col = getPixel(indices, cutout_size, image_size)
         # Get coutout mask and maps
-        dhm_cutout, dsm_cutout, cls_cutout, cutout = getCutOut(markers, dhm, dsm, cls, row, col, x, cutout_size)
+        dhm_cutout, dsm_cutout, cls_cutout, cutout = getCutOut(markers, dhm, dsm, cls, row, col, marker_id, cutout_size)
 
         # Get features from Height map
         dhm_mask = np.uint8(cutout) * dhm_cutout
-        vol, max_height, avg_height, roof_type, area = getVolume(dhm_mask)
+        max_height, avg_height, area = getVolume(dhm_mask)
 
         # Check if data is good
-        if area < 35.0:  # or cx > image_size or cy > image_size or cx < 0 or cy < 0:
+        if area < 50.0:  # or cx > image_size or cy > image_size or cx < 0 or cy < 0:
             #print(area)
             continue
 
         # Centrum of object
-        angle, contour_ratio, good = getArea(cutout)
+        contour_ratio, good = getArea(cutout)
 
         if good == 0:
             print("Not good")
@@ -323,27 +325,21 @@ def extractFeatureData(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,map_id):
         dsm_mask = np.uint8(cutout) * dsm_cutout
         sea_level, ground_slope = getDsmFeatures(dsm_mask)
 
-        # Get adjustment for global map position
-        add_x, add_y = getCorrectGlobalMapPosition(map_id)
 
         # Add data to temporary array
         feature_data_temp[0, 0] = area # m^2
-        feature_data_temp[1, 0] = vol #
-        feature_data_temp[2, 0] = max_height
-        feature_data_temp[3, 0] = avg_height
-        feature_data_temp[4, 0] = roof_type #
-        feature_data_temp[5, 0] = terrain
-        feature_data_temp[6, 0] = forrest
-        feature_data_temp[7, 0] = road
-        feature_data_temp[8, 0] = water
-        feature_data_temp[9, 0] = object_cls
-        feature_data_temp[10, 0] = ground_slope
-        feature_data_temp[11, 0] = sea_level
-        feature_data_temp[12, 0] = indices.item(0) + add_y #  # Where the object is on global map
-        feature_data_temp[13, 0] = indices.item(1) + add_x #
-        feature_data_temp[14, 0] = angle #
-        feature_data_temp[15, 0] = contour_ratio #
-        feature_data_temp[16, 0] = map_id
+        feature_data_temp[1, 0] = max_height
+        feature_data_temp[2, 0] = avg_height
+        feature_data_temp[3, 0] = terrain
+        feature_data_temp[4, 0] = forrest
+        feature_data_temp[5, 0] = road
+        feature_data_temp[6, 0] = water
+        feature_data_temp[7, 0] = object_cls
+        feature_data_temp[8, 0] = ground_slope
+        feature_data_temp[9, 0] = sea_level
+        feature_data_temp[10, 0] = contour_ratio
+        feature_data_temp[11, 0] = marker_id
+        feature_data_temp[12, 0] = map_id
 
         feature_data = np.hstack((feature_data, feature_data_temp))
 
@@ -362,12 +358,16 @@ def getColor(class_nbr):
     g = 0
     r = 0
     sat = 255
+
+    #if class_nbr == -1 or class_nbr == 1 or class_nbr == 2 or class_nbr == 4 or class_nbr == 7 or class_nbr > 9:
+        #return b,g,r
+
     if class_nbr == 0:
-        b = sat
+        r = sat
     elif class_nbr == 1:
         g = sat
     elif class_nbr == 2:
-        r = sat
+        b = sat
     elif class_nbr == 3:
         b = sat
         g = sat
