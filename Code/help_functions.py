@@ -122,7 +122,7 @@ def crop_im_part(ortho, stats):
 
     cropped_im = ortho[top_coord:bottom_coord, left_coord:right_coord]
 
-    return cropped_im
+    return cropped_im, [left_coord, right_coord, top_coord, bottom_coord]
 
 
 

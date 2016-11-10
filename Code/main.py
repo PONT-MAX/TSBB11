@@ -46,10 +46,10 @@ object_mask = np.multiply(dhm,cls)
 object_mask[object_mask>0.0] = 2
 cls2 = cls2 + object_mask
 
+lines, patch_list, coords_list=extract_buildings.get_buildings(ortho, object_mask)
 
-
-lines=extract_buildings.get_buildings(ortho, object_mask)
-
+print(len(patch_list))
+print(len(coords_list))
 
 # Edge detection adn extraction
 
@@ -63,9 +63,9 @@ lines=extract_buildings.get_buildings(ortho, object_mask)
 #vei.visulation_export(map_name)
 #call(["./visulation/lab"])
 
+#take back
+#Image.fromarray(lines).show()
 
-Image.fromarray(lines).show()
-
-#cv2.imshow('hough', lines)
-#cv2.waitKey(0)
+cv2.imshow('hough', lines)
+cv2.waitKey(0)
 

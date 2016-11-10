@@ -40,11 +40,14 @@ def get_buildings(ortho,object_mask):
         height=stats[blob_no,3]
         cv2.rectangle(thresh_3d, (left_coord, top_coord), (left_coord + width, top_coord + height), (0, 255, 0), 2)
 
-
+    patch_list = []
+    coords_list = []
 
     #start at 1 since first blob is the background
     for box_no in range(40, 50):
-        im_patch = help_functions.crop_im_part(thresh1_clean, stats[box_no, :])
+        im_patch, im_coords = help_functions.crop_im_part(thresh1_clean, stats[box_no, :])
+        patch_list.append(im_patch)
+        coords_list.append(im_coords)
         #rotated_boxes = help_functions.get_rotated_box(im_patch, 2)
         cv2.imshow('hough', im_patch)
         cv2.waitKey(0)
@@ -59,8 +62,7 @@ def get_buildings(ortho,object_mask):
 
     #rotated_boxes=help_functions.get_rotated_box(labels, number_of_blobs)
     #Image.fromarray(rotated_boxes).show()
-
-    return thresh_3d
+    return thresh_3d, patch_list, coords_list
 
     #see which components have a number of pixels that are above a certain number of connected pixels and open/close them
     #but not the smaller ones...
