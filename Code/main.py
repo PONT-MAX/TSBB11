@@ -23,19 +23,19 @@ from sklearn.manifold import TSNE
 from sklearn.datasets import load_digits
 from sklearn.preprocessing import StandardScaler
 from sklearn import preprocessing
+from itertools import chain
 
 #################################
 
 # Load map names
-
 map_source_directory = init_v.init_map_directory()
 
 # Number of features getting extracted, and preparing feature holder
 NUMBER_OF_FEATURES = 17
 feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
 
-"""
-for x in range(0,17):
+
+for x in range(5,6):
     # Load Maps
     print("Map: ", x)
     map_name = map_source_directory[x]
@@ -46,7 +46,7 @@ for x in range(0,17):
 
     print("Map: ", x, "Getting markers")
     # Get markers from map (Watershed) this stage is performed by other function later on
-    markers = object.getMarkers(map_name)
+    markers = object.getMarkers(map_name,x)
 
     print("Map: ", x, "Starting extract Features")
     feature_data_temp = object.extractFeatureData(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,x)
@@ -57,11 +57,11 @@ for x in range(0,17):
 # Clean featuredata
 feature_data = np.delete(feature_data, 0, 1)
 print("Shape FD = ", feature_data.shape)
-#np.save('./numpy_arrays/feature_data_all_4.npy', feature_data)
+np.save('./numpy_arrays/feature_data_good_only_5.npy', feature_data)
 
-"""
 
-cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all_4.npy'))
+
+cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_good_only_5.npy'))
 cluster_data_meta = np.empty([max(cluster_data.shape), 4])
 cluster_data_meta[:, 0] = np.copy(cluster_data[:, 16])
 cluster_data_meta[:, 2] = np.copy(cluster_data[:, 12])
@@ -76,13 +76,15 @@ cluster_data = np.delete(cluster_data, 1, 1)
 print(cluster_data.shape)
 
 #best_mcs,best_ms,best_P = object.findOptimalHdbParameters(cluster_data)
-best_mcs = 29
-best_ms = 8
-
+best_mcs = 27
+best_ms = 7
+#MCS:  27  & MS:  7 Gives best %:  5.5900621118  w/  11  classes
 stat = True
 print_all_statistic = True
+print_mask = True
 visulize_clustering = False
-hd_cluster = object.printOptimalHdb(cluster_data,best_mcs,best_ms,stat,print_all_statistic,visulize_clustering)
+hd_cluster = object.printOptimalHdb(cluster_data,best_mcs,
+    best_ms,stat,print_all_statistic,visulize_clustering,print_mask)
 
 
 # Add map number and class to each feature
@@ -95,7 +97,8 @@ im_full = np.empty([im_size*3, im_size*3, 3], dtype=int)
 
 le = 0
 te = 2
-for map_c in (range(0, 3) + range(4, 7) + range(9,12)):
+concatenated = chain(range(0, 3),range(4, 7),range(9,12))
+for map_c in concatenated:
 
     map_name = map_source_directory[map_c]
     ort = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1)
@@ -121,7 +124,6 @@ print(im_full.shape)
 Image.fromarray(im_full.astype('uint8')).show()
 
 """
-
 
 plt.figure(1)
 plt.plot(cluster_data[0, :], cluster_data[2, :], 'ro')
