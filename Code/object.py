@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from sklearn.manifold import TSNE
 import time
+import hdbscan
 
 
 def getCorrectGlobalMapPosition(map):
@@ -412,3 +413,53 @@ def getColor(class_nbr):
         g = 55
 
     return (b, g, r)
+
+def findOptimalHdbParameters(cluster_data):
+    print("Finding optimal parameters for HDBSCAN with for-loops, data size:", cluster_data.shape)
+    mcs_start = int(input("Enter starting minimum cluster size: "))
+    mcs_end = int(input("Enter maximum minimum cluster size: "))
+    mcs_delta = int(input("Enter for-loop counter increment: "))
+    ms_start = int(input("Enter starting minimum samples: "))
+    ms_delta = int(input("Enter for-loop counter increment: "))
+    nbr_cls_low = int(input("Enter lowest number of classes: "))
+    nbr_cls_high = int(input("Enter highest number of classes: "))
+    proc_high = int(input("Enter lowest outlier percentage: "))
+    best_mcs = 0
+    best_ms = 0
+    best_P = 50
+    #prompt user for mcs, nbr_cls, proc
+    for mcs in range(mcs_start,mcs_end,mcs_delta):
+        print("MCS: ", mcs)
+        
+        for ms in range(1, mcs, ms_delta):
+
+            # print(" Starting HDBSCAN, data size:", cluster_data.shape)
+            hd_cluster = hdbscan.HDBSCAN(algorithm='best',metric='euclidean',min_cluster_size=mcs,min_samples=ms,alpha=1.0)
+            hd_cluster.fit(cluster_data)
+
+            # Lables
+            stat = False
+            print_all_statistic = False
+            visulize_clustering = False
+            proc, nbr_cls = printHdbscanResult(hd_cluster,cluster_data,stat,print_all_statistic,visulize_clustering,best_P,mcs,ms)
+
+            if nbr_cls > nbr_cls_low and nbr_cls < nbr_cls_high and proc < proc_high:
+                print("MCS: ", mcs, " & MS: ", ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
+                best_mcs = mcs
+                best_ms = ms
+                best_P = proc
+                
+    return (best_mcs,best_ms,best_P)
+
+
+def printOptimalHdb(cluster_data,mcs, ms, stat, print_all_statistic,visulize_clustering):
+
+    hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=mcs, min_samples=ms, alpha=1.0)
+    hd_cluster.fit(cluster_data)
+
+    # Lables
+    proc, nbr_cls = printHdbscanResult(hd_cluster, cluster_data, stat, print_all_statistic, visulize_clustering,
+                                              141, 1, 5)
+    return hd_cluster
+
+

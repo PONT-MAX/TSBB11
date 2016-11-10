@@ -33,8 +33,8 @@ map_source_directory = init_v.init_map_directory()
 # Number of features getting extracted, and preparing feature holder
 NUMBER_OF_FEATURES = 13
 feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
-"""
 
+"""
 for x in range(0,17):
     # Load Maps
     print("Map: ", x)
@@ -59,8 +59,8 @@ feature_data = np.delete(feature_data, 0, 1)
 print("Shape FD = ", feature_data.shape)
 np.save('./numpy_arrays/feature_data_all_5.npy', feature_data)
 
-
 """
+
 
 cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all_5.npy'))
 
@@ -72,46 +72,14 @@ cluster_data = np.delete(cluster_data, 11, 1)
 
 print(cluster_data.shape)
 
+best_mcs,best_ms,best_P = object.findOptimalHdbParameters(cluster_data)
 
-
-# print(" Starting HDBSCAN, data size:", cluster_data.shape)
-hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=48, min_samples=1, alpha=1.0)
-hd_cluster.fit(cluster_data)
-
-# Lables
-stat = False
-print_all_statistic = False
-visulize_clustering = False
-proc, nbr_cls = object.printHdbscanResult(hd_cluster, cluster_data, stat, print_all_statistic, visulize_clustering,
-                                          48, 1, 5)
 
 """
-
-#141 1 11
-#161 1
-
-for mcs in range(30,60):
-    print("MCS: ", mcs)
-    best_P = 50
-    for ms in range(1, mcs):
-
-        # print(" Starting HDBSCAN, data size:", cluster_data.shape)
-        hd_cluster = hdbscan.HDBSCAN(algorithm='best',metric='euclidean',min_cluster_size=mcs,min_samples=ms,alpha=1.0)
-        hd_cluster.fit(cluster_data)
-
-        # Lables
-        stat = False
-        print_all_statistic = False
-        visulize_clustering = False
-        proc, nbr_cls = object.printHdbscanResult(hd_cluster,cluster_data,stat,print_all_statistic,visulize_clustering,best_P,mcs,ms)
-
-        if nbr_cls > 8 and nbr_cls < 30 and proc < 31:
-            print("MCS: ", mcs, " & MS: ", ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
-            print_all_statistic = True
-            proc, nbr_cls = object.printHdbscanResult(hd_cluster, cluster_data, stat, print_all_statistic,
-                                                      visulize_clustering, best_P, mcs, ms)
-            best_P = proc
-
+stat = True
+print_all_statistic = True
+visulize_clustering = False
+hd_cluster = object.printOptimalHdb(cluster_data,best_mcs,best_ms,stat,print_all_statistic,visulize_clustering)
 """
 
 
@@ -122,7 +90,6 @@ nbr_feat_min = min(cluster_data.shape) - 1
 nbr_feat_max = max(cluster_data.shape) - 1
 im_size = 2048*2
 im_full = np.empty([im_size*3, im_size*3, 3], dtype=int)
-
 
 le = 0
 te = 2
@@ -155,3 +122,47 @@ for map_c in (range(0, 3) + range(4, 7) + range(9,12)):
 print(im_full.shape)
 Image.fromarray(im_full.astype('uint8')).show()
 
+"""
+
+
+# print(" Starting HDBSCAN, data size:", cluster_data.shape)
+hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=48, min_samples=1, alpha=1.0)
+hd_cluster.fit(cluster_data)
+
+# Lables
+stat = False
+print_all_statistic = False
+visulize_clustering = False
+proc, nbr_cls = object.printHdbscanResult(hd_cluster, cluster_data, stat, print_all_statistic, visulize_clustering,
+                                          48, 1, 5)
+
+
+
+#141 1 11
+#161 1
+
+for mcs in range(30,60):
+    print("MCS: ", mcs)
+    best_P = 50
+    for ms in range(1, mcs):
+
+        # print(" Starting HDBSCAN, data size:", cluster_data.shape)
+        hd_cluster = hdbscan.HDBSCAN(algorithm='best',metric='euclidean',min_cluster_size=mcs,min_samples=ms,alpha=1.0)
+        hd_cluster.fit(cluster_data)
+
+        # Lables
+        stat = False
+        print_all_statistic = False
+        visulize_clustering = False
+        proc, nbr_cls = object.printHdbscanResult(hd_cluster,cluster_data,stat,print_all_statistic,visulize_clustering,best_P,mcs,ms)
+
+        if nbr_cls > 8 and nbr_cls < 30 and proc < 31:
+            print("MCS: ", mcs, " & MS: ", ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
+            print_all_statistic = True
+            proc, nbr_cls = object.printHdbscanResult(hd_cluster, cluster_data, stat, print_all_statistic,
+                                                      visulize_clustering, best_P, mcs, ms)
+            best_P = proc
+
+
+
+"""
