@@ -360,76 +360,94 @@ def getColor(class_nbr):
     r = 0
     sat = 255
 
-    #if class_nbr == -1 or class_nbr == 1 or class_nbr == 2 or class_nbr == 4 or class_nbr == 7 or class_nbr > 9:
-        #return b,g,r
+    if class_nbr == -1:
+        print("Error:\nClass_nbr: ", class_nbr)
+        return 30,30,30
 
-    if class_nbr == 0:
-        r = sat
-    elif class_nbr == 1:
-        g = sat
-    elif class_nbr == 2:
+    it = 0
+    while not class_nbr < 100 + 100*it:
+        it += 1
+
+    class_nbr -= 100*it
+    sat = sat - 50*it
+
+    if class_nbr > 6:
+        print("Error:\nClass_nbr: ", class_nbr, "\nit: ", it)
+
+    if class_nbr < 4:
         b = sat
-    elif class_nbr == 3:
-        b = sat
-        g = sat
-    elif class_nbr == 4:
-        b = sat
+    if class_nbr > 1 and class_nbr < 6:
         r = sat
-    elif class_nbr == 5:
-        g = sat
-        r = sat
-    elif class_nbr == 6:
-        b = sat
-        r = sat
+    if class_nbr == 1 or class_nbr == 3 or class_nbr > 4 and class_nbr < 7:
         g = sat
 
-    sat = 120
-    if class_nbr == 7:
-        b = sat
-    elif class_nbr == 8:
-        g = sat
-    elif class_nbr == 9:
-        r = sat
-    elif class_nbr == 10:
-        b = sat
-        g = sat
-    elif class_nbr == 11:
-        b = sat
-        r = sat
-    elif class_nbr == 12:
-        g = sat
-        r = sat
-    elif class_nbr == 13:
-        b = sat
-        r = sat
-        g = sat
-    elif class_nbr > 13:
-        b = 255
-        r = 100
-        g = 200
-    elif class_nbr == -1:
-        b = 55
-        r = 55
-        g = 55
+    return b,g,r
 
-    return (b, g, r)
+def getHdbParameters(data_points):
+    print("getHdbParameters: ", data_points)
+    mcs_start = 5
+    mcs_end = data_points
+    mcs_delta = 1
+    ms_start = 1
+    ms_delta = 1
+    proc_high = 60
+    nbr_cls_low = 2
+    nbr_cls_high = 6
 
-def findOptimalHdbParameters(cluster_data):
-    print("Finding optimal parameters for HDBSCAN with for-loops, data size:", cluster_data.shape)
-    mcs_start = int(input("Enter starting minimum cluster size: "))
-    mcs_end = int(input("Enter maximum minimum cluster size: "))
-    mcs_delta = int(input("Enter for-loop counter increment: "))
-    ms_start = int(input("Enter starting minimum samples: "))
-    ms_delta = int(input("Enter for-loop counter increment: "))
-    nbr_cls_low = int(input("Enter lowest number of classes: "))
-    nbr_cls_high = int(input("Enter highest number of classes: "))
-    proc_high = int(input("Enter lowest outlier percentage: "))
+    if data_points > 500:
+        proc_high = 40
+        mcs_start = 10
+        mcs_end = 50
+        nbr_cls_high = 8
+    if data_points > 1000:
+        mcs_start = 20
+        mcs_end = 60
+        mcs_delta = 2
+        ms_delta = 2
+        nbr_cls_low = 4
+        nbr_cls_high = 10
+    if data_points > 2000:
+        mcs_end = 90
+        mcs_delta = 5
+        ms_delta = 4
+        nbr_cls_low = 7
+        nbr_cls_high = 15
+    if data_points > 4000:
+        mcs_start = 40
+        mcs_end = 120
+        mcs_delta = 5
+        ms_delta = 4
+        nbr_cls_high = 20
+
+    print("mcs: ", mcs_start, " ms: ", ms_start, " low_class: ", nbr_cls_low, " high_class: ", nbr_cls_high)
+    return mcs_start, mcs_end, mcs_delta, ms_start, ms_delta, nbr_cls_low, nbr_cls_high, proc_high
+
+
+
+
+
+def findOptimalHdbParameters(cluster_data,manual):
+    if manual:
+        print("Finding optimal parameters for HDBSCAN with for-loops, data size:", cluster_data.shape)
+        mcs_start = int(input("Enter starting minimum cluster size: "))
+        mcs_end = int(input("Enter maximum minimum cluster size: "))
+        mcs_delta = int(input("Enter for-loop counter increment: "))
+        ms_start = int(input("Enter starting minimum samples: "))
+        ms_delta = int(input("Enter for-loop counter increment: "))
+        nbr_cls_low = int(input("Enter lowest number of classes: "))
+        nbr_cls_high = int(input("Enter highest number of classes: "))
+        proc_high = int(input("Enter lowest outlier percentage: "))
+    else:
+        print("Finding optimal parameters for HDBSCAN with for-loops, data size Auto:", cluster_data.shape)
+        mcs_start, mcs_end, mcs_delta, ms_start, ms_delta, nbr_cls_low, nbr_cls_high, proc_high \
+            = getHdbParameters(max(cluster_data.shape))
+
     best_mcs = 0
     best_ms = 0
     best_P = 50
     #prompt user for mcs, nbr_cls, proc
     for mcs in range(mcs_start,mcs_end,mcs_delta):
-        print("MCS: ", mcs)
+        #print("MCS: ", mcs)
         
         for ms in range(1, mcs, ms_delta):
 
@@ -444,10 +462,12 @@ def findOptimalHdbParameters(cluster_data):
             proc, nbr_cls = printHdbscanResult(hd_cluster,cluster_data,stat,print_all_statistic,visulize_clustering,best_P,mcs,ms)
 
             if nbr_cls > nbr_cls_low and nbr_cls < nbr_cls_high and proc < proc_high:
-                print("MCS: ", mcs, " & MS: ", ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
-                best_mcs = mcs
-                best_ms = ms
-                best_P = proc
+                #print("MCS: ", mcs, " & MS: ", ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
+                if proc < best_P:
+                    best_mcs = mcs
+                    best_ms = ms
+                    best_P = proc
+                    print("MCS: ", mcs, " & MS: ", ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
                 
     return (best_mcs,best_ms,best_P)
 
