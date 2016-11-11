@@ -8,6 +8,7 @@ from sklearn.manifold import TSNE
 import time
 import hdbscan
 
+import extract_buildings
 
 def getCorrectGlobalMapPosition(map):
     x = 0
@@ -145,74 +146,41 @@ def getArea(mark_mask):
 
     return contour_ratio, good
 
-def getMarkers(map_name):
-    # call type w/: dtm,dsm,dhm,cls,ortho
-    dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
-    cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
-    # extract tall bouldings
-    # less then 2 meters high is not an object (house)
-    dhm[dhm < 1.5] = 0
-    dhm_mask = np.copy(dhm)
-    dhm_mask[dhm_mask > 0] = 1
-    cls[cls != 2] = 0
-    cls[cls > 0] = 1
+def getMarkers(map_name,map_id,object_mask):
+    #TODO: tweak iterations for sure bg and fg.
+    #TODO: should sure_fg be the input mask or should we erode it?
+    
+    #Import ortho map for watershed. Import house mask.
+    ortho = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1) 
+    mask = extract_buildings.getBuildings(ortho,object_mask)
 
-    obj_mask = cls * np.uint8(dhm_mask)
-    # Put to 255 for show
-    obj_mask[obj_mask > 0] = 1
-    #Image.fromarray(obj_mask*255).show()
-    obj_mask_med = cv2.medianBlur(obj_mask, 5)
-    #Image.fromarray(obj_mask_med*255).show()
+    # Finding certain background area
+    kernel = np.ones((3, 3), np.uint8) #Minimal Kernel size.
+    dilate_iterations = 3;
+    sure_bg = cv2.dilate(mask, kernel, iterations=dilate_iterations)
 
-    # dhm_obj = ((dhm*obj_mask_med)/np.amax(dhm))*255.0
-    dhm_obj = (dhm * obj_mask_med)
-    #Image.fromarray(dhm_obj*255).show()
-
-
-    obj = np.uint8(dhm_obj)
-
-    # Plot histogram
-    # plt.hist(obj.ravel(),256,[0,256])
-    # plt.show()
-
-    # blur = cv2.GaussianBlur(obj,(1,1),0)
-    med = cv2.medianBlur(obj, 9)
-
-    # ret, thresh = cv2.threshold(med,1,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-    ret, thresh = cv2.threshold(med, 4, 255, cv2.THRESH_BINARY)
-    # thresh = cv2.adaptiveThreshold(med,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,0)
-
-    #Image.fromarray(obj*255).show('obj')
-    #Image.fromarray(thresh).show('threshold')
-
-
-
-    # noise removal
-    kernel = np.ones((3, 3), np.uint8)
-    # Tweeka itterations
-    opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=2)
-
-    # sure background area
-    # Tweeka itreataions
-    sure_bg = cv2.dilate(opening, kernel, iterations=3)
-
-    # Finding sure foreground area
-    dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
-    ret, sure_fg = cv2.threshold(dist_transform, 0.2 * dist_transform.max(), 255, 0)
+    # Finding certain foreground area
+    """
+    dist_transform = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
+    thresh_limit = 0.075 #Most likely 0.7
+    ret, sure_fg = cv2.threshold(dist_transform, thresh_limit * dist_transform.max(), 255, 0)
+    #sure_fg = np.uint8(sure_fg)
+    """
+    sure_fg = np.uint8(mask)
 
     # Finding unknown region
-    sure_fg = np.uint8(sure_fg)
     unknown = cv2.subtract(sure_bg, sure_fg)
-
-    # FIXA THRESHOLD
-
+    
     #Image.fromarray(sure_fg).show('foreground')
+    #input("Showing FG. Press enter to continue...")
     #Image.fromarray(sure_bg).show('background')
-    #Image.fromarray(unknown).show('unknown')
-    #Image.fromarray(dist_transform).show('dist')
+    #input("Showing BG. Press enter to continue...")
+    """
+    Image.fromarray(unknown).show('unknown')
+    Image.fromarray(dist_transform).show('dist')
+    """
+    # Marker labeling
 
-
-    # Marker labelling
     ret, markers = cv2.connectedComponents(sure_fg)
 
     # Add one to all labels so that sure background is not 0, but 1
@@ -220,15 +188,16 @@ def getMarkers(map_name):
 
     # Now, mark the region of unknown with zero
     markers[unknown == 255] = 0
-
-    # Watershed need colorimage
-    obj_rgb = cv2.cvtColor(obj, cv2.COLOR_GRAY2BGR)
-
+    
+    #läs in hela färgbilden!!! lägg in direkt. datatyp...? uint8
+    
     # Watershed
-    markers1 = cv2.watershed(obj_rgb, markers)
-
-    #obj_rgb[markers1 == -1] = [255, 255, 0]
-    #Image.fromarray(obj_rgb).show()
+    print("Show contours on map, read ortho again to see better")
+    ortho = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1) 
+    markers1 = cv2.watershed(ortho, markers)
+    ortho[markers1 == -1] = [255, 255, 0]
+    #Image.fromarray(ortho).show() #SHOWS CONTOURS OF ALL OBJECTS IN ENTIRE MAP
+    #input("Press enter to continue...")
 
     #Image.fromarray(markers1).show()
 
@@ -472,14 +441,14 @@ def findOptimalHdbParameters(cluster_data,manual):
     return (best_mcs,best_ms,best_P)
 
 
-def printOptimalHdb(cluster_data,mcs, ms, stat, print_all_statistic,visulize_clustering):
+def printOptimalHdb(cluster_data,mcs, ms, stat, print_all_statistic,visulize_clustering,print_mask):
 
     hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=mcs, min_samples=ms, alpha=1.0)
     hd_cluster.fit(cluster_data)
 
     # Lables
-    proc, nbr_cls = printHdbscanResult(hd_cluster, cluster_data, stat, print_all_statistic, visulize_clustering,
-                                              141, 1, 5)
+    proc, nbr_cls = printHdbscanResult(hd_cluster, cluster_data,
+        stat, print_all_statistic, visulize_clustering, 141, 1, 5)
     return hd_cluster
 
 
