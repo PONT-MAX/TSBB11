@@ -168,7 +168,7 @@ def getMarkers(map_name,map_id,object_mask):
     """
     sure_fg = np.uint8(mask)
 
-    # Finding unknown region
+    # Finding unknown regionq   <qq
     unknown = cv2.subtract(sure_bg, sure_fg)
     
     #Image.fromarray(sure_fg).show('foreground')
@@ -331,15 +331,44 @@ def getColor(class_nbr):
 
     if class_nbr == -1:
         print("Error:\nClass_nbr: ", class_nbr)
-        return 30,30,30
+        return 255,0,0
+    elif class_nbr == 0:
+        return 200,0,100
+    elif class_nbr == 1:
+        return 0,255,0
+    elif class_nbr == 2:
+        return 0,0,255
+    elif class_nbr == 3:
+        return 133,133,133
+    elif class_nbr == 4:
+        return 165,233,193
+    elif class_nbr == 5:
+        return 255,196,180
+    elif class_nbr == 6:
+        return 152,222,241
+    elif class_nbr == 7:
+        return 0,158,60
+    elif class_nbr == 8:
+        return 0,131,255
+    elif class_nbr == 9:
+        return 0,195,119
+    elif class_nbr == 10:
+        return 0,148,141
+    elif class_nbr == 11:
+        return 0,190,228
+    elif class_nbr == 12:
+        return 192,210,255
+    elif class_nbr == 13:
+        return 255,119,85
 
+    """
     it = 0
     while not class_nbr < 100 + 100*it:
         it += 1
 
     class_nbr -= 100*it
     sat = sat - 50*it
-
+    
     if class_nbr > 6:
         print("Error:\nClass_nbr: ", class_nbr, "\nit: ", it)
 
@@ -349,7 +378,7 @@ def getColor(class_nbr):
         r = sat
     if class_nbr == 1 or class_nbr == 3 or class_nbr > 4 and class_nbr < 7:
         g = sat
-
+        """
     return b,g,r
 
 def getHdbParameters(data_points):
@@ -441,7 +470,7 @@ def findOptimalHdbParameters(cluster_data,manual):
     return (best_mcs,best_ms,best_P)
 
 
-def printOptimalHdb(cluster_data,mcs, ms, stat, print_all_statistic,visulize_clustering,print_mask):
+def printOptimalHdb(cluster_data,mcs, ms, stat, print_all_statistic,visulize_clustering):
 
     hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=mcs, min_samples=ms, alpha=1.0)
     hd_cluster.fit(cluster_data)

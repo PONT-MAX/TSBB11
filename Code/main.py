@@ -37,7 +37,7 @@ map_source_directory = init_v.init_map_directory()
 NUMBER_OF_FEATURES = 13
 feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
 
-
+"""
 for x in range(0,11): #0:11
     # Load Maps
     print("Map: ", x)
@@ -62,10 +62,10 @@ for x in range(0,11): #0:11
 feature_data = np.delete(feature_data, 0, 1)
 print("Shape FD = ", feature_data.shape)
 np.save('./numpy_arrays/feature_data_all.npy', feature_data)
+"""
 
 
-
-cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all_5.npy'))
+cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all.npy'))
 
 cluster_data_meta = np.empty([max(cluster_data.shape), 3])
 cluster_data_meta[:, 0] = np.copy(cluster_data[:, 11]) # Marker id
@@ -78,21 +78,25 @@ cluster_data_first = cluster_data[:,[0, 2]]
 
 print(cluster_data_first.shape)
 
-best_mcs,best_ms,best_P = object.findOptimalHdbParameters(cluster_data,True)
-
+#best_mcs,best_ms,best_P = object.findOptimalHdbParameters(cluster_data,True)
+best_mcs = 16
+best_ms = 3
 stat = True
 print_all_statistic = True
 print_mask = True
 visulize_clustering = False
 
-hd_cluster = object.printOptimalHdb(cluster_data_first,best_mcs,best_ms,stat,print_all_statistic,visulize_clustering)
+hd_cluster = object.printOptimalHdb(cluster_data,best_mcs,best_ms,stat,print_all_statistic,visulize_clustering)
 
 
-"""
+
 
 # Add map number and class to each feature
 cluster_data_meta[:, 2] = np.copy(hd_cluster.labels_)
 cluster_data = np.hstack((cluster_data, cluster_data_meta)) # 13
+   
+"""
+
 
 print(cluster_data.shape)
 index_pos = np.where(cluster_data[:, 13] < 0)
@@ -132,7 +136,7 @@ np.save('cd1.npy', cluster_data)
 
 cluster_data = np.load('cd1.npy')
 print(cluster_data.shape)
-
+"""
 nbr_feat_min = min(cluster_data.shape) - 1
 nbr_feat_max = max(cluster_data.shape) - 1
 im_size = 2048*2
@@ -140,17 +144,24 @@ im_full = np.empty([im_size*3, im_size*3, 3], dtype=int)
 
 le = 0
 te = 2
-
-for map_c in (range(0, 6) + range(7,10)):
+concatenated = list(range(0, 6)) + list(range(7,10))
+for map_c in concatenated:
 
 #concatenated = chain(range(0, 6),range(7, 10))
 #for map_c in concatenated:
-
+    print(map_c)
     map_name = map_source_directory[map_c]
-    markers = object.getMarkers(map_name)
+    dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
+    cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+    object_mask = help_functions.getObject(cls,dhm)
+    #markers = np.load('markerstmp.npy')
+    markers = object.getMarkers(map_name,map_c, object_mask)
+    #np.save('markerstmp.npy', markers)
+    #input('save done')
     cls_mask = np.empty([max(markers.shape),max(markers.shape),3],dtype=np.uint8)
     ort = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1)
     for feat in range(0, nbr_feat_max):
+        
         if cluster_data[feat, nbr_feat_min-1] == map_c:
             if not feat % 20:
                 print("Map: ", map_c, " || ", feat)
@@ -177,4 +188,5 @@ for map_c in (range(0, 6) + range(7,10)):
 print(im_full.shape)
 Image.fromarray(im_full.astype('uint8')).show()
 
+"""
 """
