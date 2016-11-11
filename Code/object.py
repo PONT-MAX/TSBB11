@@ -8,6 +8,7 @@ from sklearn.manifold import TSNE
 import time
 import hdbscan
 
+import extract_buildings
 
 def getCorrectGlobalMapPosition(map):
     x = 0
@@ -145,12 +146,13 @@ def getArea(mark_mask):
 
     return contour_ratio, good
 
-def getMarkers(map_name,map_id):
+def getMarkers(map_name,map_id,object_mask):
     #TODO: tweak iterations for sure bg and fg.
     #TODO: should sure_fg be the input mask or should we erode it?
     
-    mask = np.load('./numpy_arrays/binary_mask_' + str(map_id) + '.npy') #From other module.
-    ortho = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1) #Color needed for watershed.
+    #Import ortho map for watershed. Import house mask.
+    ortho = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1) 
+    mask = extract_buildings.getBuildings(ortho,object_mask)
 
     # Finding certain background area
     kernel = np.ones((3, 3), np.uint8) #Minimal Kernel size.
@@ -169,10 +171,10 @@ def getMarkers(map_name,map_id):
     # Finding unknown region
     unknown = cv2.subtract(sure_bg, sure_fg)
     
-    Image.fromarray(sure_fg).show('foreground')
-    input("Showing FG. Press enter to continue...")
-    Image.fromarray(sure_bg).show('background')
-    input("Showing BG. Press enter to continue...")
+    #Image.fromarray(sure_fg).show('foreground')
+    #input("Showing FG. Press enter to continue...")
+    #Image.fromarray(sure_bg).show('background')
+    #input("Showing BG. Press enter to continue...")
     """
     Image.fromarray(unknown).show('unknown')
     Image.fromarray(dist_transform).show('dist')
@@ -190,13 +192,12 @@ def getMarkers(map_name,map_id):
     #läs in hela färgbilden!!! lägg in direkt. datatyp...? uint8
     
     # Watershed
-
+    print("Show contours on map, read ortho again to see better")
+    ortho = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1) 
     markers1 = cv2.watershed(ortho, markers)
     ortho[markers1 == -1] = [255, 255, 0]
-
-    print("SHOWS CONTOURS OF ALL OBJECTS IN ENTIRE MAP")
-    Image.fromarray(ortho).show() #SHOWS CONTOURS OF ALL OBJECTS IN ENTIRE MAP
-    input("Press enter to continue...")
+    #Image.fromarray(ortho).show() #SHOWS CONTOURS OF ALL OBJECTS IN ENTIRE MAP
+    #input("Press enter to continue...")
 
     #Image.fromarray(markers1).show()
 

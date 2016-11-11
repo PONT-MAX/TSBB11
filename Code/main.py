@@ -11,7 +11,6 @@ import random
 # import pyopencl as cl
 import init_v
 import visulation_export_image as vei
-import object
 from subprocess import call
 from PIL import Image
 from PIL import ImageOps
@@ -25,6 +24,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn import preprocessing
 from itertools import chain
 
+import object
+import extract_buildings
+import help_functions
+
 #################################
 
 # Load map names
@@ -35,18 +38,19 @@ NUMBER_OF_FEATURES = 13
 feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
 
 
-for x in range(5,6):
+for x in range(0,11): #0:11
     # Load Maps
     print("Map: ", x)
     map_name = map_source_directory[x]
     dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
     dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
     cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+    object_mask = help_functions.getObject(cls,dhm)
     image_size = dhm.shape
 
     print("Map: ", x, "Getting markers")
     # Get markers from map (Watershed) this stage is performed by other function later on
-    markers = object.getMarkers(map_name,x)
+    markers = object.getMarkers(map_name,x,object_mask)
 
     print("Map: ", x, "Starting extract Features")
     feature_data_temp = object.extractFeatureData(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,x)
@@ -57,7 +61,7 @@ for x in range(5,6):
 # Clean featuredata
 feature_data = np.delete(feature_data, 0, 1)
 print("Shape FD = ", feature_data.shape)
-np.save('./numpy_arrays/feature_data_good_only_5.npy', feature_data)
+np.save('./numpy_arrays/feature_data_all.npy', feature_data)
 
 
 cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_good_only_5.npy'))
