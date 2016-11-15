@@ -245,7 +245,7 @@ def printHdbscanResult(hd_cluster,feature_data,stat,print_all,visulize_clusterin
 
     return (proc, nbr_of_classes)
 
-def extractFeatureData(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,map_id):
+def getMapFeatures(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,map_id):
    
     t = time.time()
     cutout_size = 1500
@@ -480,4 +480,34 @@ def printOptimalHdb(cluster_data,mcs, ms, stat, print_all_statistic,visulize_clu
         stat, print_all_statistic, visulize_clustering, 141, 1, 5)
     return hd_cluster
 
+def getAllFeatures(first_map,last_map,filename,create_features):
+    
+    if (create_features):
+        map_source_directory = init_v.init_map_directory()
+        for x in range(first_map,last_map):
+            # Load Maps
+            print("Map: ", x)
+            map_name = map_source_directory[x]
+            dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
+            dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
+            cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+            object_mask = help_functions.getObject(cls,dhm)
+            image_size = dhm.shape
+
+            print("Map: ", x, "Getting markers")
+            # Get markers from map (Watershed) this stage is performed by other function later on
+            markers = getMarkers(map_name,x,object_mask)
+
+            print("Map: ", x, "Starting extract Features")
+            feature_data_temp = getMapFeatures(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,x)
+            feature_data = np.hstack((feature_data, feature_data_temp))
+
+
+        # After all features fro all maps are extracted
+        # Clean featuredata
+        feature_data = np.delete(feature_data, 0, 1)
+        print("Shape FD = ", feature_data.shape)
+        np.save(filename, feature_data)
+
+    return np.transpose(np.load(filename))
 

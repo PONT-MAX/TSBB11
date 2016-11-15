@@ -37,36 +37,14 @@ map_source_directory = init_v.init_map_directory()
 NUMBER_OF_FEATURES = 13
 feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
 
-"""
-for x in range(0,11): #0:11
-    # Load Maps
-    print("Map: ", x)
-    map_name = map_source_directory[x]
-    dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
-    dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
-    cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
-    object_mask = help_functions.getObject(cls,dhm)
-    image_size = dhm.shape
+#Extract features from a selected amount of maps or use an existing numpy array.
+create_features = False
+first_map = 0
+last_map = 11 #11 in total
+filename = './numpy_arrays/feature_data_all.npy'
+cluster_data = object.getAllFeatures(first_map,last_map,filename,create_features)
 
-    print("Map: ", x, "Getting markers")
-    # Get markers from map (Watershed) this stage is performed by other function later on
-    markers = object.getMarkers(map_name,x,object_mask)
-
-    print("Map: ", x, "Starting extract Features")
-    feature_data_temp = object.extractFeatureData(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,x)
-    feature_data = np.hstack((feature_data, feature_data_temp))
-
-
-# After all features fro all maps are extracted
-# Clean featuredata
-feature_data = np.delete(feature_data, 0, 1)
-print("Shape FD = ", feature_data.shape)
-np.save('./numpy_arrays/feature_data_all.npy', feature_data)
-"""
-
-
-cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all.npy'))
-
+#Meta cluster data for subclustering.
 cluster_data_meta = np.empty([max(cluster_data.shape), 3])
 cluster_data_meta[:, 0] = np.copy(cluster_data[:, 11]) # Marker id
 cluster_data_meta[:, 1] = np.copy(cluster_data[:, 12]) # Map id
