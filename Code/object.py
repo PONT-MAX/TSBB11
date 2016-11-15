@@ -168,7 +168,7 @@ def getMarkers(map_name,map_id,object_mask):
     """
     sure_fg = np.uint8(mask)
 
-    # Finding unknown region
+    # Finding unknown regionq   <qq
     unknown = cv2.subtract(sure_bg, sure_fg)
     
     #Image.fromarray(sure_fg).show('foreground')
@@ -331,15 +331,43 @@ def getColor(class_nbr):
 
     if class_nbr == -1:
         print("Error:\nClass_nbr: ", class_nbr)
-        return 30,30,30
+        return 255,0,0
+    elif class_nbr == 0:
+        return 200,0,100
+    elif class_nbr == 1:
+        return 0,255,0
+    elif class_nbr == 2:
+        return 0,0,255
+    elif class_nbr == 3:
+        return 133,133,133
+    elif class_nbr == 4:
+        return 165,233,193
+    elif class_nbr == 5:
+        return 255,196,180
+    elif class_nbr == 6:
+        return 152,222,241
+    elif class_nbr == 7:
+        return 0,158,60
+    elif class_nbr == 8:
+        return 0,131,255
+    elif class_nbr == 9:
+        return 0,195,119
+    elif class_nbr == 10:
+        return 0,148,141
+    elif class_nbr == 11:
+        return 0,190,228
+    elif class_nbr == 12:
+        return 192,210,255
+    elif class_nbr == 13:
+        return 255,119,85
 
+    """
     it = 0
     while not class_nbr < 100 + 100*it:
         it += 1
 
     class_nbr -= 100*it
     sat = sat - 50*it
-
     if class_nbr < 4:
         b = sat
     if class_nbr > 1 and class_nbr < 6:
@@ -358,7 +386,7 @@ def getColor(class_nbr):
         r = sat*0.55
         g = sat*0.8
         b = sat*0.35
-
+        """
     return b,g,r
 
 def getHdbParameters(data_points):

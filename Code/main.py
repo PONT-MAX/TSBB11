@@ -128,6 +128,7 @@ feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
 
 """
 
+
 queue = Queue.Queue()
 w0 = threading.Thread(target=worker, args=(0,3,map_source_directory,queue)) # 0,1,2
 w1 = threading.Thread(target=worker, args=(3,5,map_source_directory,queue)) # 3,4
@@ -181,6 +182,12 @@ np.save('./numpy_arrays/feature_data_all_threads_final.npy', feature_data)
 """
 """
 cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all_threads_final.npy'))
+=======
+"""
+
+
+cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all.npy'))
+
 
 cluster_data_meta = np.empty([max(cluster_data.shape), 3])
 cluster_data_meta[:, 0] = np.copy(cluster_data[:, 11]) # Marker id
@@ -194,6 +201,7 @@ cluster_data_first = cluster_data[:,[0, 2]]
 print(cluster_data_first.shape)
 
 #best_mcs,best_ms,best_P = object.findOptimalHdbParameters(cluster_data_first,True)
+
 stat = True
 print_all_statistic = True
 print_mask = True
@@ -210,6 +218,7 @@ cluster_data_meta[:, 2] = np.copy(hd_cluster.labels_)
 cluster_data = np.hstack((cluster_data, cluster_data_meta)) # 13 49 47
 
 # KLUSTA UNCLASSIFIED DATA!!!!!
+
 
 
 
@@ -308,4 +317,5 @@ else:
 Image.fromarray(tot_im.astype('uint8')).show()
 
 
+"""
 
