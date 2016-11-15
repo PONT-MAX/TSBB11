@@ -24,7 +24,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn import preprocessing
 from itertools import chain
 import threading
-import Queue
+import queue
 
 
 import object
@@ -99,9 +99,9 @@ print("Shape FD = ", feature_data.shape)
 np.save('./numpy_arrays/feature_data_all_threads_final.npy', feature_data)
 
 """
-"""
+
 cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all_threads_final.npy'))
-"""
+
 
 cluster_data_meta = np.empty([max(cluster_data.shape), 3])
 cluster_data_meta[:, 0] = np.copy(cluster_data[:, 11]) # Marker id
@@ -142,7 +142,7 @@ cluster_data[:,13] = cluster_data[:,13] + 1
 
 # 5, 80, 2, 1, 2, 2, 6, 40
 # 40, 120, 2, 1, 2, 6, 11, 40
-for label in xrange(0, (int)(max(cluster_data[:,13])+1)):
+for label in range(0, (int)(max(cluster_data[:,13])+1)):
     index_pos = np.where(cluster_data[:, 13] != label)
     index_pos_not = np.where(cluster_data[:, 13] == label)
 
