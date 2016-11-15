@@ -189,7 +189,7 @@ def getMarkers(map_name,map_id,object_mask):
     # Now, mark the region of unknown with zero
     markers[unknown == 255] = 0
     
-    #läs in hela färgbilden!!! lägg in direkt. datatyp...? uint8
+
     
     # Watershed
     print("Show contours on map, read ortho again to see better")
@@ -324,9 +324,9 @@ def getMapFeatures(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,map_id):
 
 
 def getColor(class_nbr):
-    b = 0
-    g = 0
-    r = 0
+    b = 1
+    g = 1
+    r = 1
     sat = 255
 
     if class_nbr == -1:
@@ -368,54 +368,55 @@ def getColor(class_nbr):
 
     class_nbr -= 100*it
     sat = sat - 50*it
-    
-    if class_nbr > 6:
-        print("Error:\nClass_nbr: ", class_nbr, "\nit: ", it)
-
     if class_nbr < 4:
         b = sat
     if class_nbr > 1 and class_nbr < 6:
         r = sat
     if class_nbr == 1 or class_nbr == 3 or class_nbr > 4 and class_nbr < 7:
         g = sat
+    if class_nbr == 7:
+        r = sat*0.9
+        g = sat*0.45
+        b = sat*0.1
+    if class_nbr == 8:
+        r = sat*0.15
+        g = sat*0.2
+        b = sat*0.95
+    if class_nbr == 9:
+        r = sat*0.55
+        g = sat*0.8
+        b = sat*0.35
         """
     return b,g,r
 
 def getHdbParameters(data_points):
     print("getHdbParameters: ", data_points)
     mcs_start = 5
-    mcs_end = data_points
-    mcs_delta = 1
+    mcs_end = 50
+    mcs_delta = 2
     ms_start = 1
     ms_delta = 1
-    proc_high = 60
-    nbr_cls_low = 2
-    nbr_cls_high = 6
+    proc_high = 40
+    nbr_cls_low = 3
+    nbr_cls_high = 10
 
     if data_points > 500:
-        proc_high = 40
-        mcs_start = 10
-        mcs_end = 50
-        nbr_cls_high = 8
+        mcs_start = 5
+        mcs_end = 80
     if data_points > 1000:
-        mcs_start = 20
-        mcs_end = 60
-        mcs_delta = 2
+        mcs_start = 10
+        mcs_end = 80
+        mcs_delta = 4
         ms_delta = 2
-        nbr_cls_low = 4
-        nbr_cls_high = 10
     if data_points > 2000:
-        mcs_end = 90
-        mcs_delta = 5
+        mcs_end = 100
+        mcs_delta = 8
         ms_delta = 4
-        nbr_cls_low = 7
-        nbr_cls_high = 15
     if data_points > 4000:
-        mcs_start = 40
-        mcs_end = 120
-        mcs_delta = 5
-        ms_delta = 4
-        nbr_cls_high = 20
+        mcs_start = 4
+        mcs_end = 32*4
+        mcs_delta = 16
+        ms_delta = 16
 
     print("mcs: ", mcs_start, " ms: ", ms_start, " low_class: ", nbr_cls_low, " high_class: ", nbr_cls_high)
     return mcs_start, mcs_end, mcs_delta, ms_start, ms_delta, nbr_cls_low, nbr_cls_high, proc_high
@@ -445,7 +446,8 @@ def findOptimalHdbParameters(cluster_data,manual):
     best_P = 50
     #prompt user for mcs, nbr_cls, proc
     for mcs in range(mcs_start,mcs_end,mcs_delta):
-        #print("MCS: ", mcs)
+        if not mcs % 10:
+            print("MCS: ", mcs)
         
         for ms in range(1, mcs, ms_delta):
 
@@ -465,13 +467,13 @@ def findOptimalHdbParameters(cluster_data,manual):
                     best_mcs = mcs
                     best_ms = ms
                     best_P = proc
-                    print("MCS: ", mcs, " & MS: ", ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
+                    print("MCS: ", best_mcs, " & MS: ", best_ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
                 
     return (best_mcs,best_ms,best_P)
 
 
 def printOptimalHdb(cluster_data,mcs, ms, stat, print_all_statistic,visulize_clustering):
-
+    print("optimal: ", mcs, ms)
     hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=mcs, min_samples=ms, alpha=1.0)
     hd_cluster.fit(cluster_data)
 
@@ -480,34 +482,80 @@ def printOptimalHdb(cluster_data,mcs, ms, stat, print_all_statistic,visulize_clu
         stat, print_all_statistic, visulize_clustering, 141, 1, 5)
     return hd_cluster
 
-def getAllFeatures(first_map,last_map,filename,create_features):
-    
-    if (create_features):
-        map_source_directory = init_v.init_map_directory()
-        for x in range(first_map,last_map):
-            # Load Maps
-            print("Map: ", x)
-            map_name = map_source_directory[x]
-            dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
-            dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
-            cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
-            object_mask = help_functions.getObject(cls,dhm)
-            image_size = dhm.shape
 
-            print("Map: ", x, "Getting markers")
-            # Get markers from map (Watershed) this stage is performed by other function later on
-            markers = getMarkers(map_name,x,object_mask)
+def worker(start,stop,map_source_directory,queue):
+    """thread worker function"""
 
-            print("Map: ", x, "Starting extract Features")
-            feature_data_temp = getMapFeatures(markers,dhm,dsm,cls,NUMBER_OF_FEATURES,x)
-            feature_data = np.hstack((feature_data, feature_data_temp))
+    NUMBER_OF_FEATURES = 13
+    feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
+
+    print("Worker s, s:",start,stop)
+    for x in range(start, stop):  # 0:11
+        # Load Maps
+        print("Map: ", x)
+        map_name = map_source_directory[x]
+        dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
+        dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
+        cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+        object_mask = help_functions.getObject(cls, dhm)
+        image_size = dhm.shape
+
+        print("Map: ", x, "Getting markers")
+        # Get markers from map (Watershed) this stage is performed by other function later on
+        markers = getMarkers(map_name, x, object_mask)
+
+        print("Map: ", x, "Starting extract Features")
+        feature_data_temp = extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, x)
+        feature_data = np.hstack((feature_data, feature_data_temp))
+
+    feature_data = np.delete(feature_data, 0, 1)
+    your_return = feature_data
+    queue.put(your_return)
+
+    return
 
 
-        # After all features fro all maps are extracted
-        # Clean featuredata
-        feature_data = np.delete(feature_data, 0, 1)
-        print("Shape FD = ", feature_data.shape)
-        np.save(filename, feature_data)
+def colorer(start, stop, map_source_directory, cluster_data, que):
+    nbr_feat_min = min(cluster_data.shape) - 1
+    nbr_feat_max = max(cluster_data.shape) - 1
+    im_size = 2048 * 2
+    im_full = np.empty([im_size * 3, im_size, 3], dtype=int)
+    te = 2
 
-    return np.transpose(np.load(filename))
+    for map_c in range(start, stop):
+
+        # concatenated = chain(range(0, 6),range(7, 10))
+        # for map_c in concatenated:
+
+        map_name = map_source_directory[map_c]
+
+        dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
+        cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+        object_mask = help_functions.getObject(cls, dhm)
+
+        markers = getMarkers(map_name, map_c, object_mask)
+        cls_mask = np.empty([max(markers.shape), max(markers.shape), 3], dtype=np.uint8)
+        ort = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1)
+        for feat in range(0, nbr_feat_max):
+            if cluster_data[feat, nbr_feat_min - 1] == map_c:
+                if not feat % 50:
+                    print("Map: ", map_c, " || ", feat)
+                marker_id = cluster_data[feat, nbr_feat_min - 2]
+                label = cluster_data[feat, nbr_feat_min]
+                if label == -1:
+                    continue
+                b, g, r = getColor(label)
+                index_pos = np.where(markers == marker_id)
+                cls_mask[index_pos] = [r, g, b]
+
+        index_pos = np.where(cls_mask[:, :, 0] > 0)
+        ort[index_pos] = ort[index_pos] * 0.3
+        ort = ort + cls_mask * 0.7
+
+        res = cv2.resize(ort, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_CUBIC)
+        im_full[te * im_size:(te + 1) * im_size, 0:im_size, :] = res
+        te -= 1
+
+    im_full[0, 0, 0] = start
+    que.put(im_full)
 
