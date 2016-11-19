@@ -4,6 +4,7 @@ import math
 from PIL import Image
 import scipy
 
+
 def getObject(cls,dhm):
     # Extract treshold
     # less then 2 meters high is not an object (house)
@@ -55,3 +56,15 @@ def getBlobs(object_mask, ortho ):
             labels[labels==blob_number]=0
 
     return number_of_blobs, labels, stats, ortho_png
+
+def saveMarkers(map_source_directory):
+    for map_c in range(6, 11):
+        map_name = map_source_directory[map_c]
+        dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
+        cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+        object_mask = help_functions.getObject(cls, dhm)
+        markers = object.getMarkers(map_name, map_c, object_mask)
+        name = "./markers/markers_" + str(map_c) + ".png"
+        Image.fromarray(markers).save(name, bits=32)
+
+
