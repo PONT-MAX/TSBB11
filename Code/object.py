@@ -248,7 +248,6 @@ def printHdbscanResult(hd_cluster, feature_data, stat, print_all, visulize_clust
 
 
 
-
 def getColor(class_nbr):
     b = 1
     g = 1
@@ -408,6 +407,7 @@ def printOptimalHdb(cluster_data, mcs, ms, stat, print_all_statistic, visulize_c
     proc, nbr_cls = printHdbscanResult(hd_cluster, cluster_data,
                                        stat, print_all_statistic, visulize_clustering, 141, 1, 5)
     return hd_cluster
+
 
 
 def getOffset(map):
@@ -586,6 +586,7 @@ def getFeatures(map_source_directory,CORES, new_markers=None,save=None):
         dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
         dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
         cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+
         if new_markers:
             print("Make New Markers")
             map_name = map_source_directory[x]
@@ -627,6 +628,7 @@ def getFeatures(map_source_directory,CORES, new_markers=None,save=None):
         np.save('./numpy_arrays/feature_data_all_threads_final.npy', feature_data)
 
     return feature_data
+
 
 
 

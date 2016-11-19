@@ -33,6 +33,7 @@ import help_functions
 import multiprocessing
 import time
 
+
 CORES = multiprocessing.cpu_count()
 print("Number of System Cores: ", CORES)
 
@@ -40,17 +41,18 @@ print("Number of System Cores: ", CORES)
 
 # Load map names
 map_source_directory = init_v.init_map_directory()
+NUMBER_OF_FEATURES = 13
 
+"""
 # Extract features
 # Ny mergad funktion
-# feature_data = object.getFeatures(map_source_directory,CORES,new_markers=False,save=False)
+feature_data = object.getFeatures(map_source_directory,CORES,new_markers=False,save=False)
 
 
 
 
 cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all_threads_final.npy'))
 print(cluster_data.shape)
-
 
 
 cluster_data_meta = np.empty([max(cluster_data.shape), 3])
@@ -92,7 +94,7 @@ cluster_data[:,13] = cluster_data[:,13] + 1
 
 # 5, 80, 2, 1, 2, 2, 6, 40
 # 40, 120, 2, 1, 2, 6, 11, 40
-for label in xrange(0, (int)(max(cluster_data[:,13])+1)):
+for label in range(0, (int)(max(cluster_data[:,13])+1)):
     index_pos = np.where(cluster_data[:, 13] != label)
     index_pos_not = np.where(cluster_data[:, 13] == label)
 
@@ -126,4 +128,4 @@ cluster_data = np.load('cd1.npy')
 # Ny mergad funktion
 object.colorCluster(cluster_data, map_source_directory,CORES,scale=0.5)
 
-"""
+
