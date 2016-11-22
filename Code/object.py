@@ -8,9 +8,19 @@ from sklearn.manifold import TSNE
 import time
 import hdbscan
 import threading
+import sys
+
+#Import queue based on python version
+if sys.version[0] == '2':
+    import Queue as queue
+else:
+    import queue as queue
+
+#Import local files
 import help_functions
-import Queue
 import extract_buildings
+
+
 
 
 def getCorrectGlobalMapPosition(map):
@@ -37,6 +47,7 @@ def getCorrectGlobalMapPosition(map):
 
 
 def getProgress(x, delay,THREAD_ID,to_range,map_id):
+    print("thread is: ",THREAD_ID)
     if not x % (to_range*5/100):
         print("Map: ", map_id, "Thread: ", THREAD_ID, ", progress: ", (x*100/to_range), "%")
 
@@ -428,6 +439,7 @@ def getOffset(map):
 
 
 def colorer(TREAHD_ID, cluster_data, nbr_feat_max, map_c, markers, CORES, cls_mask, nbr_feat_min):
+    print("threadid now: ",TREAHD_ID)
     for feat in range(TREAHD_ID, nbr_feat_max, CORES):
         if cluster_data[feat, nbr_feat_min - 1] == map_c:
             if not feat % (120 * 5):
@@ -442,7 +454,7 @@ def colorer(TREAHD_ID, cluster_data, nbr_feat_max, map_c, markers, CORES, cls_ma
 
 
 def colorCluster(cluster_data, map_source_directory, CORES, scale=None):
-
+    print(CORES)
     if scale is None:
         scale = 0.5
 
@@ -453,7 +465,8 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None):
 
     TIME = time.time()
     print("Coloring Cluster result")
-    for map_c in (range(0, 6) + range(7, 10)):
+    concatenated = list(range(0, 6)) + list(range(7, 10))
+    for map_c in concatenated:
 
         # concatenated = chain(range(0, 6),range(7, 10))
         # for map_c in concatenated:
@@ -470,8 +483,11 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None):
             t = threading.Thread(target=colorer,
                                  args=(i, cluster_data, nbr_feat_max, map_c, markers, CORES, cls_mask, nbr_feat_min))
             threads.append(t)
+            #print("Starting...")
+        #for t in threads:
+            print("Thread " + str(t) + " started!")
             t.start()
-
+            #print("Done!")
         for t in threads:
             t.join()
 
@@ -580,7 +596,7 @@ def getFeatures(map_source_directory,CORES, new_markers=None,save=None):
     TIME = time.time()
     for x in range(0, 11):  # 0:11
         # Load Maps
-        que = Queue.Queue()
+        que = queue.Queue()
         print("Map: ", x)
         map_name = map_source_directory[x]
         dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)

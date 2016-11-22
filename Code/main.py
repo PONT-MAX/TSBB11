@@ -5,11 +5,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import, print_function
+import sys
 import cv2
 import numpy as np
 import random
 # import pyopencl as cl
-import init_v
 import visulation_export_image as vei
 from subprocess import call
 from PIL import Image
@@ -23,15 +23,13 @@ from sklearn.datasets import load_digits
 from sklearn.preprocessing import StandardScaler
 from sklearn import preprocessing
 from itertools import chain
-import threading
-import Queue
 
-
+#Import local files
+import init_v
 import object
 import extract_buildings
 import help_functions
 import multiprocessing
-import time
 
 
 CORES = multiprocessing.cpu_count()
