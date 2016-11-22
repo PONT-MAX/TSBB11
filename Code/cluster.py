@@ -67,11 +67,6 @@ def cluster_data(map_source_directory,save_cluster_data,save_filename,CORES):
 
     index_pos = np.where(cluster_data[:, 13] >= 0)
     cluster_data[index_pos, 13] -= 100
-    histo = np.bincount((cluster_data[:,13].astype(int)+1))
-    print(histo)
-    print(histo[1:10])
-    print(histo[101:110])
-    print(histo[201:210])
 
     if save_cluster_data:
         np.save(save_filename, cluster_data)

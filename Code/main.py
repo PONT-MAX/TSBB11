@@ -44,7 +44,9 @@ NUMBER_OF_FEATURES = 13
 save_cluster_data = False
 save_filename = 'cd1.npy'
 
+
+
 cluster_data = cluster.cluster_data(map_source_directory,
     save_cluster_data,save_filename,CORES)
 
-object.colorCluster(cluster_data, map_source_directory,CORES,scale=0.5)
+object.colorCluster(cluster_data, map_source_directory,CORES,scale=0.5,save=True)
