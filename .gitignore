@@ -3,8 +3,6 @@
 *.json
 
 *.DS_Store
-*.bmp
-*.png
 *.pyc
 **/pycache
 **/MicroGlut.h
