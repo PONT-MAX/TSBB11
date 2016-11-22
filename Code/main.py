@@ -48,4 +48,4 @@ feature_data = object.getFeatures(map_source_directory, CORES,new_markers=False,
 cluster_data = cluster.cluster_data(feature_data,
     save_cluster_data=False,save_filename='cd1.npy')
 
-object.colorCluster(cluster_data, map_source_directory,CORES,scale=0.5,save=True)
+object.colorCluster(cluster_data, map_source_directory,CORES,scale=0.25,save=True)

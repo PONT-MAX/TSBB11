@@ -7,6 +7,7 @@ def cluster_data(cluster_data,save_cluster_data=None,save_filename=None):
         save_cluster_data = False
     if save_filename is None:
         save_filename = ''
+        save_cluster_data = False
 
     print(cluster_data.shape)
 
@@ -22,14 +23,14 @@ def cluster_data(cluster_data,save_cluster_data=None,save_filename=None):
 
     print(cluster_data_first.shape)
 
-    #best_mcs,best_ms,best_P = object.findOptimalHdbParameters(cluster_data_first,True)
+    best_mcs, best_ms, best_P = object.findOptimalHdbParameters(cluster_data_first,first_sub=True)
 
     stat = True
     print_all_statistic = True
     print_mask = True
     visulize_clustering = False
-    best_mcs = 178
-    best_ms = 119
+    #best_mcs = 178
+    #best_ms = 119
     hd_cluster = object.printOptimalHdb(cluster_data_first,best_mcs,best_ms,stat,print_all_statistic,visulize_clustering)
 
 
@@ -44,6 +45,7 @@ def cluster_data(cluster_data,save_cluster_data=None,save_filename=None):
 
     print(cluster_data.shape)
 
+    # Make unclassified data label 0
     cluster_data[:,13] = cluster_data[:,13] + 1
 
     # 5, 80, 2, 1, 2, 2, 6, 40
@@ -54,7 +56,7 @@ def cluster_data(cluster_data,save_cluster_data=None,save_filename=None):
 
         cluster_current = np.delete(cluster_data, index_pos, 0)
         cluster_data = np.delete(cluster_data, index_pos_not, 0)
-        best_mcs, best_ms, best_P = object.findOptimalHdbParameters(cluster_current[:, 0:11],False)
+        best_mcs, best_ms, best_P = object.findOptimalHdbParameters(cluster_current[:, 0:11])
         print("\nbest_mcs = ", best_mcs, " || ms: ", best_ms, "   %:", best_P)
         hd_cluster = object.printOptimalHdb(cluster_current[:, 0:11], best_mcs, best_ms, False, True,False)
 

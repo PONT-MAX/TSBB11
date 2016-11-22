@@ -43,8 +43,7 @@ def getCorrectGlobalMapPosition(map):
     return (x, y)
 
 def getProgress(x, delay,THREAD_ID,to_range,map_id):
-    print("thread is: ",THREAD_ID)
-    if not x % (to_range*5/100):
+    if not x % (to_range/10):
         print("Map: ", map_id, "Thread: ", THREAD_ID, ", progress: ", (x*100/to_range), "%")
 
 def getPixel(indices, cutout_size, image_size):
@@ -313,7 +312,12 @@ def getHdbParameters(data_points):
     print("mcs: ", mcs_start, " ms: ", ms_start, " low_class: ", nbr_cls_low, " high_class: ", nbr_cls_high)
     return mcs_start, mcs_end, mcs_delta, ms_start, ms_delta, nbr_cls_low, nbr_cls_high, proc_high
 
-def findOptimalHdbParameters(cluster_data, manual):
+def findOptimalHdbParameters(cluster_data, manual=None,first_sub=None):
+    if manual is None:
+        manual = False
+    if first_sub is None:
+        first_sub = False
+
     if manual:
         print("Finding optimal parameters for HDBSCAN with for-loops, data size:", cluster_data.shape)
         mcs_start = int(input("Enter starting minimum cluster size: "))
@@ -324,6 +328,16 @@ def findOptimalHdbParameters(cluster_data, manual):
         nbr_cls_low = int(input("Enter lowest number of classes: "))
         nbr_cls_high = int(input("Enter highest number of classes: "))
         proc_high = int(input("Enter lowest outlier percentage: "))
+    elif first_sub:
+        print("First Sub Clustering")
+        mcs_start = 2
+        mcs_end = 60
+        mcs_delta = 2
+        ms_start = 1
+        ms_delta = 4
+        nbr_cls_low = 2
+        nbr_cls_high = 6
+        proc_high = 50
     else:
         print("Finding optimal parameters for HDBSCAN with for-loops, data size Auto:", cluster_data.shape)
         mcs_start, mcs_end, mcs_delta, ms_start, ms_delta, nbr_cls_low, nbr_cls_high, proc_high \
@@ -334,11 +348,10 @@ def findOptimalHdbParameters(cluster_data, manual):
     best_P = 50
     # prompt user for mcs, nbr_cls, proc
     for mcs in range(mcs_start, mcs_end, mcs_delta):
-        if not mcs % 10:
-            print("MCS: ", mcs)
 
         for ms in range(1, mcs, ms_delta):
-
+            if ms == 1:
+                print("MCS: ", mcs)
             # print(" Starting HDBSCAN, data size:", cluster_data.shape)
             hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=mcs, min_samples=ms,
                                          alpha=1.0)
@@ -360,6 +373,10 @@ def findOptimalHdbParameters(cluster_data, manual):
                     print("MCS: ", best_mcs, " & MS: ", best_ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
 
     return (best_mcs, best_ms, best_P)
+
+
+
+
 
 def printOptimalHdb(cluster_data, mcs, ms, stat, print_all_statistic, visulize_clustering):
     print("optimal: ", mcs, ms)
@@ -388,10 +405,9 @@ def getOffset(map):
     return x_offset, y_offset
 
 def colorer(TREAHD_ID, cluster_data, nbr_feat_max, map_c, markers, CORES, cls_mask, nbr_feat_min):
-    print("threadid now: ",TREAHD_ID)
     for feat in range(TREAHD_ID, nbr_feat_max, CORES):
         if cluster_data[feat, nbr_feat_min - 1] == map_c:
-            if not feat % (120 * 5):
+            if not feat % (nbr_feat_max / 10):
                 print("Map: ", map_c, " || Thread: ", TREAHD_ID, " || done: ", ((feat * 100) / nbr_feat_max), "%")
             marker_id = cluster_data[feat, nbr_feat_min - 2]
             label = cluster_data[feat, nbr_feat_min]
@@ -418,7 +434,7 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None,save=None
     print("Coloring Cluster result")
     concatenated = list(range(0, 6)) + list(range(7, 10))
     for map_c in concatenated:
-
+        print("Start coloring map ", map_c)
         # concatenated = chain(range(0, 6),range(7, 10))
         # for map_c in concatenated:
 
@@ -436,7 +452,7 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None,save=None
             threads.append(t)
             #print("Starting...")
         #for t in threads:
-            print("Thread " + str(t) + " started!")
+            #print("Thread " + str(t) + " started!")
             t.start()
             #print("Done!")
         for t in threads:
@@ -456,12 +472,14 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None,save=None
     print("Time:")
     print(time.time() - TIME)
 
-    Image.fromarray(im_full.astype('uint8'))
+
 
     if save:
         print("Saving Class image")
         print("Shape FD = ", im_full.shape)
-        Image.fromarray(im_full.astype('uint8')).save("ColoredImage.png")
+        Image.fromarray(im_full.astype('uint8')).save("ColoredImage.jpeg")
+    else:
+        Image.fromarray(im_full.astype('uint8'))
 
 
 def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CORES,THREAD_ID):
@@ -551,6 +569,7 @@ def getFeatures(map_source_directory,CORES,
         load_filename = ''
 
     if load:
+        print("Loading old features")
         return np.transpose(np.load(load_filename))
 
     NUMBER_OF_FEATURES = 13
