@@ -4,58 +4,7 @@ import math
 from PIL import Image
 import scipy
 
-"""
-def watershed(binary_im):
-    #binary_im = np.uint8(binary_im)
-    #_, binary_im = cv2.threshold(binary_im, 0, 255, cv2.THRESH_BINARY)
-    binary_im = cv2.cvtColor(binary_im, cv2.COLOR_BGR2GRAY)
-    print binary_im.dtype
-    kernel = np.ones((3, 3), np.uint8)
-
-    # Finding sure background area
-    sure_bg = cv2.dilate(binary_im, kernel, iterations=2)
-
-    # Finding sure foreground area
-    dist_transform = cv2.distanceTransform(binary_im, cv2.DIST_L2, 5)
-    ret, sure_fg = cv2.threshold(dist_transform, 0.7 * dist_transform.max(), 255, 0)
-
-    # Finding unknown region
-    sure_fg = np.uint8(sure_fg)
-    unknown = cv2.subtract(sure_bg, sure_fg)
-
-    #Marker labeling
-    ret, markers = cv2.connectedComponents(sure_fg)
-
-    # Add one to all labels so that sure background is not 0, but 1
-    markers = markers + 1
-
-
-    # Now, mark the region of unknown with zero
-    markers[unknown == 255] = 0
-
-    binary_im = np.repeat(binary_im[:, :, np.newaxis], 3, axis=2)
-    markers = cv2.watershed(binary_im, markers)
-    binary_im[markers == -1] = [255, 0, 0]
-
-    return binary_im
-"""
-
-def watershed(thresh, img):
-
-    fg = cv2.erode(thresh, None, iterations=2)
-    bgt = cv2.dilate(thresh, None, iterations=3)
-    ret, bg = cv2.threshold(bgt, 1, 128, 1)
-
-    marker = cv2.add(fg, bg)
-    marker32 = np.int32(marker)
-    cv2.watershed(img, marker32)
-    m = cv2.convertScaleAbs(marker32)
-    ret, thresh = cv2.threshold(m, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    res = cv2.bitwise_and(img, img, mask=thresh)
-
-    return res
-
-def detecting_blobs(object_mask, ortho ):
+def detecting_blobs(object_mask, ortho):
 
     #hough-transform to retrive the buildings
     minLineLength = 30
@@ -91,14 +40,13 @@ def detecting_blobs(object_mask, ortho ):
 
 
 
-def crop_im_part(ortho, stats):
+def crop_im_part(ortho, stats,margin):
     (h,w) = ortho.shape[:2]
 
     left_coord = stats[0]
     top_coord = stats[1]
     right_coord = stats[2] + left_coord
     bottom_coord = stats[3] + top_coord
-    margin=20
 
     if left_coord > margin:
         left_coord = stats[0] - margin
@@ -125,26 +73,60 @@ def crop_im_part(ortho, stats):
     return cropped_im, [left_coord, right_coord, top_coord, bottom_coord]
 
 
-
-def hough_on_part(im_part):
-
-    minLineLength = 30
-    maxLineGap = 5
-    lines = cv2.HoughLinesP(im_part, 1, np.pi/180, 30, minLineLength, maxLineGap)
-
-    return lines
-
-
-def get_rotated_box(bin_im, no_blobs):
-    for blob in range(1, no_blobs):
-        coords = np.argwhere(bin_im == blob).tolist()
-        coords=np.asarray(coords)
-        #print coords
-        #print type(coords)
-        rect = cv2.minAreaRect(coords)
+def get_rotated_box(bin_im):
+    #start at 1 since 0 is background
+    #for blob in range(1, no_blobs):
+    bin_im_out=bin_im.copy()
+    ret, contours, hierarchy = cv2.findContours(bin_im, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE )
+    length=len(contours)-1
+    feat =np.zeros((length,3))
+    for cnt in range(0, length):
+        rect = cv2.minAreaRect(contours[cnt+1])
+        #w,h,angle in feat_mtx
+        #feat[cnt,0]=int(round(rect[1][0]))
+        #feat[cnt,1]=int(round(rect[1][1]))
+        #feat[cnt,2]=int(round(rect[2]))
         box = cv2.boxPoints(rect)
         box = np.int0(box)
-        bin_im = cv2.drawContours(bin_im, [box], 0, (255, 255, 0), 5)
+        cv2.drawContours(bin_im_out, [box], 0, (255, 0, 0), 2)
+        """
+        angle = rect[2];
+        rect_size = rect[1];
+        if (rect[2] < -45.0):
+            angle = angle + 90.0
+            rect_size[0], rect_size[1] = rect_size[1], rect_size[0]
+        M = cv2.getRotationMatrix2D(rect[0], angle, 1.0)
+        rotated = cv2.warpAffine(bin_im,M,bin_im.shape)
+        rotated_patch= cv2.getRectSubPix(rotated, rect_size, rect[0])
+        cv2.imshow('hough', rotated_patch)
+        cv2.waitKey(0)
+
+        """
+    return bin_im_out   #, feat
+
+def blob_sep(im, dhm):
+    #separating buildings in the large blobs into smaller blobs
+    im=im/255
+    object_mask = np.multiply(dhm,im)
+    limit=np.mean(dhm)
+    object_mask=object_mask>limit
+    object_mask=object_mask*255
+    object_mask=np.uint8(object_mask)
+    return object_mask
+
+
+def more_morph(bin_im, labeled, no_blobs, stats, meanval, dhm):
+
+    #limi=2*meanval
+    limi=1.6*meanval
+    large_areas=[]
+    for blob in range(1, no_blobs):
+        if stats[blob,4]>limi:
+            large_areas.append(blob)
+    for large in large_areas:
+        patch,_=crop_im_part(bin_im, stats[large, :],0)
+        dhm_patch,_=crop_im_part(dhm, stats[large, :],0)
+        separated=blob_sep(patch, dhm_patch)
+        bin_im[stats[large, 1]:(stats[large, 1]+stats[large, 3]), stats[large, 0]:(stats[large, 0]+stats[large, 2])]=separated
 
     return bin_im
-

@@ -18,19 +18,20 @@ import extract_buildings
 map_source_directory = init_v.init_map_directory()
 map_name = map_source_directory[5]
 
-
 # call type w/: dtm,dsm,dhm,cls,ortho
 dtm =   init_v.get_map_array('dtm', map_name, True)
 dhm =   init_v.get_map_array('dhm', map_name, True)
 cls =   init_v.get_map_array('cls', map_name, True)
 ortho =   init_v.get_map_array('ortho', map_name, True)
 
-
-
+dhm_norm=np.copy(dhm)
+maxval=np.amax(dhm)
+dhm_norm=dhm_norm/maxval
 # Pre processing
 
 # Extract treshold
 # less then 2 meters high is not an object (house)
+
 dhm[dhm<2] = 0
 
 # Make copy for use later
@@ -46,10 +47,7 @@ object_mask = np.multiply(dhm,cls)
 object_mask[object_mask>0.0] = 2
 cls2 = cls2 + object_mask
 
-lines, patch_list, coords_list=extract_buildings.get_buildings(ortho, object_mask)
-
-print(len(patch_list))
-print(len(coords_list))
+lines =extract_buildings.get_buildings(ortho, object_mask, dhm_norm)
 
 # Edge detection adn extraction
 
@@ -64,8 +62,8 @@ print(len(coords_list))
 #call(["./visulation/lab"])
 
 #take back
-#Image.fromarray(lines).show()
+Image.fromarray(lines).show()
 
-cv2.imshow('hough', lines)
-cv2.waitKey(0)
 
+#cv2.imshow('hough', lines)
+#cv2.waitKey(0)
