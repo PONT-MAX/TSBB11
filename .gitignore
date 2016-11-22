@@ -1,12 +1,12 @@
 *.tif
 *.md5
 *.json
-
-*.DS_Store
+.DS_Store
 *.pyc
-**/pycache
-**/MicroGlut.h
-**/makefile
 **/MicroGlut.c
+**/MicroGLut.h
+**/makefile
 **/lab.c
+**/lab
+*/pycache
 **/.gitignore
