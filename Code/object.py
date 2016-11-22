@@ -559,14 +559,21 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CO
     print("T_ID: ",THREAD_ID, " shape: ", feature_data.shape)
     que.put(feature_data)
 
-def getFeatures(map_source_directory,CORES, new_markers=None,save=None):
+def getFeatures(map_source_directory,CORES,
+    new_markers=None,save=None,load=None,load_filename=None):
     """thread worker function"""
-
+    
     if new_markers is None:
         new_markers == False
-
     if save is None:
         save = False
+    if load is None:
+        load = False
+    if load_filename is None:
+        load_filename = ''
+
+    if load:
+        return np.transpose(np.load(load_filename))
 
     NUMBER_OF_FEATURES = 13
     feature_data = np.zeros([NUMBER_OF_FEATURES, 1])

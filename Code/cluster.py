@@ -1,14 +1,13 @@
 import object
+import numpy as np
 
-def cluster_data(map_source_directory,save_cluster_data,save_filename,CORES):
-    # Extract features
-    # Ny mergad funktion
-    feature_data = object.getFeatures(map_source_directory,CORES,new_markers=False,save=False)
+def cluster_data(cluster_data,save_cluster_data=None,save_filename=None):
 
+    if save_cluster_data is None:
+        save_cluster_data = False
+    if save_filename is None:
+        save_filename = ''
 
-
-
-    cluster_data = np.transpose(np.load('./numpy_arrays/feature_data_all_threads_final.npy'))
     print(cluster_data.shape)
 
 

@@ -41,10 +41,11 @@ print("Number of System Cores: ", CORES)
 map_source_directory = init_v.init_map_directory()
 NUMBER_OF_FEATURES = 13
 
-save_cluster_data = False
-save_filename = 'cd1.npy'
+# Extract features
+feature_data = object.getFeatures(map_source_directory, CORES,new_markers=False,
+    save=False,load=True,load_filename='./numpy_arrays/feature_data_all_threads_final.npy')
 
-cluster_data = cluster.cluster_data(map_source_directory,
-    save_cluster_data,save_filename,CORES)
+cluster_data = cluster.cluster_data(feature_data,
+    save_cluster_data=False,save_filename='cd1.npy')
 
 object.colorCluster(cluster_data, map_source_directory,CORES,scale=0.5)
