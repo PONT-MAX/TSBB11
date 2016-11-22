@@ -254,37 +254,6 @@ def getColor(class_nbr):
     if class_nbr == -1:
         # print("Error:\nClass_nbr: ", class_nbr)
         return 70, 70, 70
-    """
-    if class_nbr == 0:
-        return 200,0,100
-    elif class_nbr == 1:
-        return 0,255,0
-    elif class_nbr == 2:
-        return 0,0,255
-    elif class_nbr == 3:
-        return 133,133,133
-    elif class_nbr == 4:
-        return 165,233,193
-    elif class_nbr == 5:
-        return 255,196,180
-    elif class_nbr == 6:
-        return 152,222,241
-    elif class_nbr == 7:
-        return 0,158,60
-    elif class_nbr == 8:
-        return 0,131,255
-    elif class_nbr == 9:
-        return 0,195,119
-    elif class_nbr == 10:
-        return 0,148,141
-    elif class_nbr == 11:
-        return 0,190,228
-    elif class_nbr == 12:
-        return 192,210,255
-    elif class_nbr == 13:
-        return 255,119,85
-
-    """
     it = 0
     while not class_nbr < 100 + 100 * it:
         it += 1
@@ -432,10 +401,13 @@ def colorer(TREAHD_ID, cluster_data, nbr_feat_max, map_c, markers, CORES, cls_ma
     if TREAHD_ID == 0:
         print("map: ", map_c, " is done!\n\n")
 
-def colorCluster(cluster_data, map_source_directory, CORES, scale=None):
-    print(CORES)
+def colorCluster(cluster_data, map_source_directory, CORES, scale=None,save=None):
     if scale is None:
         scale = 0.5
+
+    if save is None:
+        save = False
+
 
     nbr_feat_min = min(cluster_data.shape) - 1
     nbr_feat_max = max(cluster_data.shape) - 1
@@ -484,7 +456,13 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None):
     print("Time:")
     print(time.time() - TIME)
 
-    Image.fromarray(im_full.astype('uint8')).show()
+    Image.fromarray(im_full.astype('uint8'))
+
+    if save:
+        print("Saving Class image")
+        print("Shape FD = ", im_full.shape)
+        Image.fromarray(im_full.astype('uint8')).save("ColoredImage.png")
+
 
 def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CORES,THREAD_ID):
 
