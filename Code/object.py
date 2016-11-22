@@ -150,13 +150,13 @@ def getArea(mark_mask):
 
     return contour_ratio, good
 
-def getMarkers(map_name, map_id, object_mask):
+def getMarkers(map_name, map_id, object_mask,dhm_norm):
     # TODO: tweak iterations for sure bg and fg.
     # TODO: should sure_fg be the input mask or should we erode it?
 
     # Import ortho map for watershed. Import house mask.
     ortho = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1)
-    mask = extract_buildings.getBuildings(ortho, object_mask)
+    mask = extract_buildings.getBuildings(ortho, object_mask,dhm_norm)
 
     # Finding certain background area
     kernel = np.ones((3, 3), np.uint8)  # Minimal Kernel size.
@@ -555,22 +555,16 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CO
     print("T_ID: ",THREAD_ID, " shape: ", feature_data.shape)
     que.put(feature_data)
 
-def getFeatures(map_source_directory,CORES,
-    new_markers=None,save=None,load=None,load_filename=None):
+def getFeatures(map_source_directory,CORES,new_markers=None,filename=None):
     """thread worker function"""
     
     if new_markers is None:
         new_markers == False
-    if save is None:
-        save = False
-    if load is None:
-        load = False
     if load_filename is None:
         load_filename = ''
 
-    if load:
-        print("Loading old features")
-        return np.transpose(np.load(load_filename))
+    if !new_markers:
+        return np.transpose(np.load(filename))
 
     NUMBER_OF_FEATURES = 13
     feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
@@ -583,6 +577,10 @@ def getFeatures(map_source_directory,CORES,
         dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
         dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
         cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+                
+        dhm_norm=np.copy(dhm)
+        maxval=np.amax(dhm)
+        dhm_norm=dhm_norm/maxval
 
         if new_markers:
             print("Make New Markers")
@@ -590,7 +588,7 @@ def getFeatures(map_source_directory,CORES,
             object_mask = help_functions.getObject(cls, dhm)
             print("Map: ", x, "Getting markers")
             # Get markers from map (Watershed) this stage is performed by other function later on
-            markers = getMarkers(map_name, x, object_mask)
+            markers = getMarkers(map_name, x, object_mask,dhm_norm)
         else:
             print("Using Old Markers")
             name = "./markers/markers_" + str(x) + ".png"
@@ -619,9 +617,9 @@ def getFeatures(map_source_directory,CORES,
     feature_data = np.delete(feature_data, 0, 1)
 
 
-    if save:
+    if new_markers:
         print("Saving Features")
         print("Shape FD = ", feature_data.shape)
-        np.save('./numpy_arrays/feature_data_all_threads_final.npy', feature_data)
+        np.save(filename, feature_data)
 
     return feature_data
