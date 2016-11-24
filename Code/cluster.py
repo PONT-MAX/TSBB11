@@ -1,75 +1,77 @@
 import object
 import numpy as np
 
-def cluster_data(cluster_data,save_cluster_data=None,save_filename=None):
 
-    if save_cluster_data is None:
-        save_cluster_data = False
-    if save_filename is None:
-        save_filename = ''
-        save_cluster_data = False
+def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clustering=True):
 
-    print(cluster_data.shape)
+    if not save_cluster_data:
+        return np.load(save_filename)
 
+    if sub_clustering:
+        print("Mode: Sub Clustering")
+        nbr_cls_high = 5
+        nbr_cls_low = 4
+        mcs_e = 160
+    else:
+        print("Mode: Full Clustering")
+        nbr_cls_high = 14
+        nbr_cls_low = 8
+        mcs_e = 160
 
-    cluster_data_meta = np.empty([max(cluster_data.shape), 3])
-    cluster_data_meta[:, 0] = np.copy(cluster_data[:, 11]) # Marker id
-    cluster_data_meta[:, 1] = np.copy(cluster_data[:, 12]) # Map id
-    cluster_data = np.delete(cluster_data, 11, 1)
-    cluster_data = np.delete(cluster_data, 11, 1)
-
-    cluster_data_first = cluster_data[:,[0, 2]]
-
-
-    print(cluster_data_first.shape)
-
-    best_mcs, best_ms, best_P = object.findOptimalHdbParameters(cluster_data_first,first_sub=True)
-
-    stat = True
-    print_all_statistic = True
-    print_mask = True
-    visulize_clustering = False
-    #best_mcs = 178
-    #best_ms = 119
-    hd_cluster = object.printOptimalHdb(cluster_data_first,best_mcs,best_ms,stat,print_all_statistic,visulize_clustering)
+    print("Cluster Data Shape Before: ", cluster_data.shape)
 
 
+    # Find Optimal HDBSCAN parameters
+    print("Find Optimal Parameters fist It")
+    mcs, ms = object.findOptimalHdbParameters(cluster_data[:, [0, 2]], save=True,
+                                              cls_high=nbr_cls_high, cls_low=nbr_cls_low,mcs_end=mcs_e)
+    print(mcs, ms)
 
+    hd_cluster = object.printOptimalHdb(cluster_data[:, [0, 2]], mcs, ms, print_all_statistic=True)
 
-    # Add map number and class to each feature
-    cluster_data_meta[:, 2] = np.copy(hd_cluster.labels_)
-    cluster_data = np.hstack((cluster_data, cluster_data_meta)) # 13 49 47
-
-    # KLUSTA UNCLASSIFIED DATA!!!!!
-
+    # Add labels to the Features
+    cluster_data = np.hstack((cluster_data, np.transpose(np.array([hd_cluster.labels_]))))
 
     print(cluster_data.shape)
 
     # Make unclassified data label 0
-    cluster_data[:,13] = cluster_data[:,13] + 1
+    cluster_data[:, 13] = cluster_data[:, 13] + 1
 
-    # 5, 80, 2, 1, 2, 2, 6, 40
-    # 40, 120, 2, 1, 2, 6, 11, 40
-    for label in range(0, (int)(max(cluster_data[:,13])+1)):
-        index_pos = np.where(cluster_data[:, 13] != label)
-        index_pos_not = np.where(cluster_data[:, 13] == label)
+    for_range = range(0, 1)
+    if sub_clustering:
+        for_range = range(1, int(max(cluster_data[:, 13]) + 1)) + for_range
 
-        cluster_current = np.delete(cluster_data, index_pos, 0)
-        cluster_data = np.delete(cluster_data, index_pos_not, 0)
-        best_mcs, best_ms, best_P = object.findOptimalHdbParameters(cluster_current[:, 0:11])
-        print("\nbest_mcs = ", best_mcs, " || ms: ", best_ms, "   %:", best_P)
-        hd_cluster = object.printOptimalHdb(cluster_current[:, 0:11], best_mcs, best_ms, False, True,False)
+    print("Find Optimal Parameters sub Clustering")
+    for label in for_range:
+        print("For label: ", label)
+        # Find where current labels datapoints are in cluster data
+        index_labels = np.where(cluster_data[:, 13] != label)
+        index_rest = np.where(cluster_data[:, 13] == label)
 
-        cluster_current[:, 13] = hd_cluster.labels_
+        # Separate Currrent sub cluster data & the rest of the data
+        cluster_current = np.delete(cluster_data, index_labels, 0)
+        cluster_data = np.delete(cluster_data, index_rest, 0)
 
-        index_pos = np.where(cluster_current[:, 13] >= 0)
-        cluster_current[index_pos, 13] += 100*(label + 1)
+        # Find optimal Parameters
+        print("For label: ", label, "  || cluster size:  ", cluster_current.shape)
+        mcs, ms = object.findOptimalHdbParameters(cluster_current[:, 0:11], save=True,
+                                                  cls_low=2,cls_high=4,proc=50)
+        if mcs == 0:
+            # Put back sub cluster and whole cluster
+            cluster_current[:, 13] = 0
+        else:
+            hd_cluster = object.printOptimalHdb(cluster_current[:, 0:11], mcs, ms)
+            cluster_current[:, 13] = hd_cluster.labels_ + 1
+            cluster_current[:, 13] += 100 * (label + 1)
+
         cluster_data = np.vstack((cluster_data, cluster_current))
 
-    index_pos = np.where(cluster_data[:, 13] >= 0)
-    cluster_data[index_pos, 13] -= 100
+    if sub_clustering:
+        index_pos = np.where(cluster_data[:, 13] >= 0)
+        cluster_data[index_pos, 13] -= 100
 
     if save_cluster_data:
+        print("Saving Clustered Data: Succes!\n\n\n\n")
         np.save(save_filename, cluster_data)
 
     return cluster_data

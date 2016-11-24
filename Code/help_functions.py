@@ -3,6 +3,7 @@ import cv2
 import math
 from PIL import Image
 import scipy
+import object
 
 def getObject(cls,dhm):
     # Extract treshold
@@ -56,15 +57,6 @@ def getBlobs(object_mask, ortho ):
 
     return number_of_blobs, labels, stats, ortho_png
 
-def saveMarkers(map_source_directory):
-    for map_c in range(6, 11):
-        map_name = map_source_directory[map_c]
-        dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
-        cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
-        object_mask = help_functions.getObject(cls, dhm)
-        markers = object.getMarkers(map_name, map_c, object_mask)
-        name = "./markers/markers_" + str(map_c) + ".png"
-        Image.fromarray(markers).save(name, bits=32)
 
 def cropImPart(ortho, stats,margin):
     (h,w) = ortho.shape[:2]

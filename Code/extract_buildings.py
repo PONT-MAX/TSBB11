@@ -39,7 +39,7 @@ def getBuildings(ortho,object_mask, dhm):
     kernel = np.ones((7,7),np.uint8)
     better_morph = cv2.morphologyEx(better_morph, cv2.MORPH_CLOSE, kernel)
     better_morph = cv2.morphologyEx(better_morph, cv2.MORPH_OPEN, kernel)
-    Image.fromarray(better_morph).show()
+    #Image.fromarray(better_morph).show()
 
     #making a 3 channel image of the thresholded image
     #thresh_3d = np.repeat(thresh1[:, :, np.newaxis], 3, axis=2)
