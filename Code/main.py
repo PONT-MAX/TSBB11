@@ -42,22 +42,26 @@ feature_data = object.getFeatures(map_source_directory,
 
 
 print("\n")
+
+feature_data[:,1] = feature_data[:,1]*10000
 cluster_data1 = cluster.cluster_data(feature_data,
     save_cluster_data=True,save_filename='cd_full_cluster1.npy',sub_clustering=False)
 
+histo = np.bincount(cluster_data1[:,NUMBER_OF_FEATURES].astype(int)-1)
+index_pos = np.where(cluster_data1[:,NUMBER_OF_FEATURES] > 15)
+cluster_data1[index_pos,NUMBER_OF_FEATURES] = cluster_data1[index_pos,NUMBER_OF_FEATURES] - (99-np.where(histo == 0)[0][0])
+cluster_data1[:,NUMBER_OF_FEATURES] = cluster_data1[:,NUMBER_OF_FEATURES]-1
+"""
 
 
 cluster_data2 = cluster.cluster_data(feature_data,
     save_cluster_data=True,save_filename='cd_sub_cluster1.npy',sub_clustering=True)
 
-
-index_pos = np.where(cluster_data1[:,13] > 15)
-cluster_data1[index_pos,13] = cluster_data1[index_pos,13] - (100-13)
-cluster_data1[:,13] = cluster_data1[:,13] - 1
+"""
 
 
 
 
 print("\n")
-object.colorCluster(cluster_data2, map_source_directory,CORES,scale=0.5,save=False,sub_c=True)
+#object.colorCluster(cluster_data2, map_source_directory,CORES,scale=0.5,save=False,sub_c=True)
 object.colorCluster(cluster_data1, map_source_directory,CORES,scale=0.5,save=False,sub_c=False)

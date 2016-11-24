@@ -309,7 +309,7 @@ def getColor(l,sub_cluster=False):
 def getColorFull(l):
 
     if l < 1:
-        return 255, 255, 255
+        return 255, 153, 204
     if l < 2:
         return 255, 1,   1
     if l < 3:
@@ -335,7 +335,7 @@ def getColorFull(l):
     if l < 13:
         return 255, 153, 204
     if l < 14:
-        return 250, 158, 200
+        return 250, 235, 240
     if l < 15:
         return 128, 1,   1
     if l < 16:
@@ -350,8 +350,8 @@ def getColorFull(l):
     return 1,1,1
 
 
-def findOptimalHdbParameters(cluster_data, save=False, mcs_start=60,mcs_end=160, mcs_delta=1, ms_delta=1,
-                             cls_low=4, cls_high=5, proc=20):
+def findOptimalHdbParameters(cluster_data, save=False, mcs_start=4,mcs_end=180, mcs_delta=1, ms_delta=1,
+                             cls_low=4, cls_high=5, proc=35):
 
 
     if save is False:

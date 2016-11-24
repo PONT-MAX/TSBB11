@@ -11,12 +11,12 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
         print("Mode: Sub Clustering")
         nbr_cls_high = 5
         nbr_cls_low = 4
-        mcs_e = 160
+        mcs_e = 180
     else:
         print("Mode: Full Clustering")
         nbr_cls_high = 14
         nbr_cls_low = 8
-        mcs_e = 200
+        mcs_e = 140
 
     print("Cluster Data Shape Before: ", cluster_data.shape)
     last_feat = min(cluster_data.shape) - 1
@@ -25,12 +25,17 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
     print("Find Optimal Parameters fist It")
 
     if sub_clustering:
+        # Use Area & avg height / Vol
         cluster_first = cluster_data[:, [0, 2]]
     else:
-        cluster_first = cluster_data[:, 0:last_feat-2]
+        # Use all features
+        cluster_first = cluster_data[:, 0:last_feat-1]
 
-    mcs, ms = object.findOptimalHdbParameters(cluster_first, save=True,
-                                              cls_high=nbr_cls_high, cls_low=nbr_cls_low,mcs_end=mcs_e)
+    print(cluster_data.shape)
+    print(cluster_first.shape)
+
+    mcs, ms = object.findOptimalHdbParameters(cluster_first, save=True, cls_high=nbr_cls_high,
+                                              cls_low=nbr_cls_low,mcs_end=mcs_e)
     print(mcs, ms)
 
     hd_cluster = object.printOptimalHdb(cluster_first, mcs, ms, print_all_statistic=True)
@@ -59,15 +64,20 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
         cluster_current = np.delete(cluster_data, index_labels, 0)
         cluster_data = np.delete(cluster_data, index_rest, 0)
 
+        if sub_clustering:
+            features = np.array([1,3,4,5,6,7,8,9,10,11])
+        else:
+            features = np.array([0,1,2,3,4,5,6,7,8,9,10,11])
+
         # Find optimal Parameters
         print("For label: ", label, "  || cluster size:  ", cluster_current.shape)
-        mcs, ms = object.findOptimalHdbParameters(cluster_current[:, 0:last_feat-2], save=True,
+        mcs, ms = object.findOptimalHdbParameters(cluster_current[:, features], save=True,
                                                   cls_low=2,cls_high=4,proc=50)
         if mcs == 0:
             # Put back sub cluster and whole cluster
             cluster_current[:, last_feat] = 0
         else:
-            hd_cluster = object.printOptimalHdb(cluster_current[:, 0:11], mcs, ms)
+            hd_cluster = object.printOptimalHdb(cluster_current[:, 0:last_feat-2], mcs, ms)
             cluster_current[:, last_feat] = hd_cluster.labels_ + 1
             cluster_current[:, last_feat] += 100 * (label + 1)
 
