@@ -29,7 +29,7 @@ import cluster
 #Set constants
 CORES = multiprocessing.cpu_count()
 print("Number of System Cores: ", CORES, "\n")
-NUMBER_OF_FEATURES = 13
+NUMBER_OF_FEATURES = 14
 
 #########################################
 # Load map names
@@ -38,7 +38,7 @@ map_source_directory = init_v.init_map_directory()
 # Extract features
 print("Loading feature data... ")
 feature_data = object.getFeatures(map_source_directory,
-    CORES,new_markers=False,filename='./numpy_arrays/feature_data_all_threads_final.npy')
+    CORES,new_markers=False,filename='./numpy_arrays/feature_data_all_threads_final.npy',load=True)
 
 
 print("\n")

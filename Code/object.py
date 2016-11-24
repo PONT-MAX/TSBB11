@@ -77,7 +77,7 @@ def getNeighbourClass(cutout, cls_cutout):
     # Return procentage of all classes surounding the current object
 
     kernel = np.ones((5, 5), np.uint8)
-    cutout_2 = cv2.dilate(np.uint8(cutout), kernel, iterations=5)
+    cutout_2 = cv2.dilate(np.uint8(cutout), kernel, iterations=10)
     cutout_2 = cutout_2 - np.uint8(cutout)
     aux_mask = cutout_2 * cls_cutout
     sum_of_all = np.count_nonzero(aux_mask)
@@ -126,13 +126,17 @@ def getArea(mark_mask):
 
     cnt = contours[0]
     if max(cnt.shape) > 5:
-        (x, y), (MA, ma), angle = cv2.fitEllipse(cnt)
-        contour_ratio = (max(MA, ma) - min(MA, ma)) / max(MA, ma)
+        #(x, y), (MA, ma), angle = cv2.fitEllipse(cnt)
+        #contour_ratio = (max(MA, ma) - min(MA, ma)) / max(MA, ma)
         good = 1
+        (x, y), (width, height), angle = cv2.minAreaRect(cnt)
+        contour_area = width*height*0.25
+        contour_ratio = (max(width, height) - min(width, height)) / max(width, height)
     else:
         angle = 0
         contour_ratio = 0
         good = 0
+        contour_area = 0
         print("CNT FALSE!!")
 
     if angle > 90.0:
@@ -144,11 +148,8 @@ def getArea(mark_mask):
         print(y)
         print("Rotation: theta = ")
         print(angle)
-        print("MA = ", MA)
-        print("ma = ", ma)
-        print(contour_ratio)
 
-    return contour_ratio, good
+    return contour_ratio, contour_area, good
 
 
 def saveMarkers(map_source_directory):
@@ -531,7 +532,7 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None,save=None
 
 def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CORES,THREAD_ID):
 
-    cutout_size = 1500
+    cutout_size = 1000
 
     feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
     image_size = dhm.shape
@@ -565,7 +566,7 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CO
             continue
 
         # Centrum of object
-        contour_ratio, good = getArea(cutout)
+        contour_ratio, contour_area, good = getArea(cutout)
 
         if good == 0:
             print("Not good")
@@ -590,8 +591,9 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CO
         feature_data_temp[8, 0] = ground_slope
         feature_data_temp[9, 0] = sea_level
         feature_data_temp[10, 0] = contour_ratio
-        feature_data_temp[11, 0] = marker_id
-        feature_data_temp[12, 0] = map_id
+        feature_data_temp[11, 0] = min(1, (area/contour_area))
+        feature_data_temp[12, 0] = marker_id
+        feature_data_temp[13, 0] = map_id
 
         feature_data = np.hstack((feature_data, feature_data_temp))
 
@@ -602,7 +604,7 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CO
     print("T_ID: ",THREAD_ID, " shape: ", feature_data.shape)
     que.put(feature_data)
 
-def getFeatures(map_source_directory,CORES,new_markers=None,filename=None):
+def getFeatures(map_source_directory,CORES,new_markers=None,filename=None,load=False,save=False):
     """thread worker function"""
     
     if new_markers is None:
@@ -613,12 +615,12 @@ def getFeatures(map_source_directory,CORES,new_markers=None,filename=None):
     if new_markers:
         print("Make new markers")
         saveMarkers(map_source_directory)
-    else:
+    elif load:
         print("Using old Features")
         return np.transpose(np.load(filename))
 
 
-    NUMBER_OF_FEATURES = 13
+    NUMBER_OF_FEATURES = 14
     feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
     TIME = time.time()
     for x in range(0, 11):  # 0:11
@@ -658,7 +660,7 @@ def getFeatures(map_source_directory,CORES,new_markers=None,filename=None):
     feature_data = np.delete(feature_data, 0, 1)
 
 
-    if new_markers:
+    if new_markers or save:
         print("Saving Features")
         print("Shape FD = ", feature_data.shape)
         np.save(filename, feature_data)
