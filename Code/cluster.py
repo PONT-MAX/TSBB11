@@ -7,35 +7,35 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
     if not save_cluster_data:
         return np.load(save_filename)
 
+    print("Cluster Data Shape Before: ", cluster_data.shape)
+    last_feat = min(cluster_data.shape) - 1
+
     if sub_clustering:
         print("Mode: Sub Clustering")
         nbr_cls_high = 5
         nbr_cls_low = 4
-        mcs_e = 180
+        mcs_e = 240
+        # Use Area & avg height / Vol
+        cluster_first = cluster_data[:, 0:3]
     else:
         print("Mode: Full Clustering")
-        nbr_cls_high = 14
-        nbr_cls_low = 8
-        mcs_e = 140
+        nbr_cls_high = 10
+        nbr_cls_low = 7
+        mcs_e = 400
+        # Use all features
+        cluster_first = cluster_data[:, 0:last_feat - 1]
 
-    print("Cluster Data Shape Before: ", cluster_data.shape)
-    last_feat = min(cluster_data.shape) - 1
+
 
     # Find Optimal HDBSCAN parameters
     print("Find Optimal Parameters fist It")
-
-    if sub_clustering:
-        # Use Area & avg height / Vol
-        cluster_first = cluster_data[:, [0, 2]]
-    else:
-        # Use all features
-        cluster_first = cluster_data[:, 0:last_feat-1]
 
     print(cluster_data.shape)
     print(cluster_first.shape)
 
     mcs, ms = object.findOptimalHdbParameters(cluster_first, save=True, cls_high=nbr_cls_high,
-                                              cls_low=nbr_cls_low,mcs_end=mcs_e)
+                                              cls_low=nbr_cls_low,mcs_end=mcs_e,mcs_delta=1,ms_delta=1,
+                                              mcs_start=4)
     print(mcs, ms)
 
     hd_cluster = object.printOptimalHdb(cluster_first, mcs, ms, print_all_statistic=True)
@@ -64,15 +64,11 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
         cluster_current = np.delete(cluster_data, index_labels, 0)
         cluster_data = np.delete(cluster_data, index_rest, 0)
 
-        if sub_clustering:
-            features = np.array([1,3,4,5,6,7,8,9,10,11])
-        else:
-            features = np.array([0,1,2,3,4,5,6,7,8,9,10,11])
-
         # Find optimal Parameters
         print("For label: ", label, "  || cluster size:  ", cluster_current.shape)
-        mcs, ms = object.findOptimalHdbParameters(cluster_current[:, features], save=True,
-                                                  cls_low=2,cls_high=4,proc=50)
+        mcs, ms = object.findOptimalHdbParameters(cluster_current[:, 0:last_feat-2], save=True,
+                                                  cls_low=2,cls_high=4,proc=50, mcs_delta=1,ms_delta=1,
+                                                  mcs_end=400,mcs_start=4)
         if mcs == 0:
             # Put back sub cluster and whole cluster
             cluster_current[:, last_feat] = 0
@@ -86,6 +82,11 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
     if sub_clustering:
         index_pos = np.where(cluster_data[:, last_feat] >= 0)
         cluster_data[index_pos, last_feat] -= 100
+    else:
+        histo = np.bincount(cluster_data[:, last_feat].astype(int) - 1)
+        index_pos = np.where(cluster_data[:, last_feat] > 15)
+        cluster_data[index_pos, last_feat] -= (99 - np.where(histo == 0)[0][0])
+        cluster_data[:, last_feat] = cluster_data[:, last_feat] - 1
 
     if save_cluster_data:
         print("Saving Clustered Data: Succes!\n\n\n\n")

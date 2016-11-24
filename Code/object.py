@@ -350,8 +350,12 @@ def getColorFull(l):
     return 1,1,1
 
 
-def findOptimalHdbParameters(cluster_data, save=False, mcs_start=4,mcs_end=180, mcs_delta=1, ms_delta=1,
-                             cls_low=4, cls_high=5, proc=35):
+def findOptimalHdbParameters(cluster_data, save=False, mcs_start=4,mcs_end=400, mcs_delta=1, ms_delta=1,
+                             cls_low=4, cls_high=5, proc=40):
+
+    if max(cluster_data.shape) < 2500:
+        mcs_start = 4
+        mcs_end = 100
 
 
     if save is False:
@@ -390,6 +394,7 @@ def findClusterParameters(cluster_data, mcs_start, mcs_end, mcs_delta, ms_delta,
         good_param_found = False
         if not mcs % 20:
             print("MCS: ", mcs)
+            #ms_delta += 1
         for ms in range(1, mcs, ms_delta):
             # print(" Starting HDBSCAN, data size:", cluster_data.shape)
             hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=mcs, min_samples=ms,
@@ -397,9 +402,6 @@ def findClusterParameters(cluster_data, mcs_start, mcs_end, mcs_delta, ms_delta,
             hd_cluster.fit(cluster_data)
 
             # Lables
-            stat = False
-            print_all_statistic = False
-            visulize_clustering = False
             proc, nbr_cls = printHdbscanResult(hd_cluster, cluster_data, stat=False)
 
             if nbr_cls >= nbr_cls_low and nbr_cls < nbr_cls_high and proc < proc_high:
@@ -409,6 +411,7 @@ def findClusterParameters(cluster_data, mcs_start, mcs_end, mcs_delta, ms_delta,
                     best_ms = ms
                     best_P = proc
                     print("MCS: ", best_mcs, " & MS: ", best_ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
+                    printHdbscanResult(hd_cluster, cluster_data, print_all=True)
                     if best_P < 3:
                         print("Breaking search: Proc < 5%")
                         good_param_found = True
@@ -581,16 +584,16 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CO
 
         # Add data to temporary array
         feature_data_temp[0, 0] = area  # m^2
-        feature_data_temp[1, 0] = max_height
-        feature_data_temp[2, 0] = avg_height
+        feature_data_temp[1, 0] = max_height # m
+        feature_data_temp[2, 0] = avg_height # m
         feature_data_temp[3, 0] = terrain
         feature_data_temp[4, 0] = forrest
         feature_data_temp[5, 0] = road
         feature_data_temp[6, 0] = water
         feature_data_temp[7, 0] = object_cls
         feature_data_temp[8, 0] = ground_slope
-        feature_data_temp[9, 0] = sea_level
-        feature_data_temp[10, 0] = contour_ratio
+        feature_data_temp[9, 0] = sea_level # m
+        feature_data_temp[10, 0] = contour_ratio # add w / h (m)
         feature_data_temp[11, 0] = min(1, (area/contour_area))
         feature_data_temp[12, 0] = marker_id
         feature_data_temp[13, 0] = map_id
