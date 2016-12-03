@@ -10,15 +10,16 @@ import hdbscan
 import threading
 import sys
 
-#Import queue based on python version
+# Import queue based on python version
 if sys.version[0] == '2':
     import Queue as queue
 else:
     import queue as queue
 
-#Import local files
+# Import local files
 import help_functions
 import extract_buildings
+
 
 def getCorrectGlobalMapPosition(map):
     x = 0
@@ -42,9 +43,11 @@ def getCorrectGlobalMapPosition(map):
 
     return (x, y)
 
-def getProgress(x, delay,THREAD_ID,to_range,map_id):
-    if not x % (to_range/10):
-        print("Map: ", map_id, "Thread: ", THREAD_ID, ", progress: ", (x*100/to_range), "%")
+
+def getProgress(x, delay, THREAD_ID, to_range, map_id):
+    if not x % (to_range / 10):
+        print("Map: ", map_id, "Thread: ", THREAD_ID, ", progress: ", (x * 100 / to_range), "%")
+
 
 def getPixel(indices, cutout_size, image_size):
     row = indices.item(0) - cutout_size / 2
@@ -52,6 +55,7 @@ def getPixel(indices, cutout_size, image_size):
     row = max(0, min(row, (image_size[0] - cutout_size)))
     col = max(0, min(col, (image_size[0] - cutout_size)))
     return (row, col)
+
 
 def getCutOut(markers, dhm, dsm, cls, row, col, x, cutout_size):
     cutout = np.copy(markers[row:row + cutout_size, col:col + cutout_size])
@@ -67,33 +71,32 @@ def getCutOut(markers, dhm, dsm, cls, row, col, x, cutout_size):
 
     return dhm_cutout, dsm_cutout, cls_cutout, cutout
 
+
 def getDsmFeatures(dsm_mask):
     sea_level = np.mean(dsm_mask[dsm_mask > 0])
     sea_max = np.amax(dsm_mask)
     ground_slope = (sea_max - sea_level) / sea_max
     return sea_max, ground_slope
 
+
 def getNeighbourClass(cutout, cls_cutout):
     # Return procentage of all classes surounding the current object
 
     kernel = np.ones((5, 5), np.uint8)
-    cutout_2 = cv2.dilate(np.uint8(cutout), kernel, iterations=10)
+    cutout_2 = cv2.dilate(np.uint8(cutout), kernel, iterations=20)
     cutout_2 = cutout_2 - np.uint8(cutout)
     aux_mask = cutout_2 * cls_cutout
     sum_of_all = np.count_nonzero(aux_mask)
 
     terrain = np.sum(aux_mask[aux_mask == 1]) / sum_of_all
-    object_cls = np.sum(aux_mask[aux_mask == 2]) / sum_of_all / 2
-
-    if np.sum(aux_mask[aux_mask == 4]) > 0:
-        water = 1.0
-    else:
-        water = 0.0
-
-    road = np.sum(aux_mask[aux_mask == 5]) / sum_of_all / 5
+    object = np.sum(aux_mask[aux_mask == 2]) / sum_of_all / 2
     forest = np.sum(aux_mask[aux_mask == 3]) / sum_of_all / 3
+    water = np.sum(aux_mask[aux_mask == 4]) / sum_of_all / 4
+    road = np.sum(aux_mask[aux_mask == 5]) / sum_of_all / 5
 
-    return terrain, forest, road, water, object_cls
+
+    return terrain, forest, road, water, object
+
 
 def getVolume(dhm_mask):
     vol = np.sum(dhm_mask) * 0.25  # Normalize for 0.25m^2 ground pixel
@@ -120,23 +123,28 @@ def getVolume(dhm_mask):
 
     return (max_height, avg_height, area)
 
+
 def getArea(mark_mask):
     ret, thresh = cv2.threshold(np.uint8(mark_mask), 0, 255, 0)
-    im2, contours, hierarchy = cv2.findContours(thresh, 1, 2)
+    im2, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, 2)
 
     cnt = contours[0]
     if max(cnt.shape) > 5:
-        #(x, y), (MA, ma), angle = cv2.fitEllipse(cnt)
-        #contour_ratio = (max(MA, ma) - min(MA, ma)) / max(MA, ma)
+        # (x, y), (MA, ma), angle = cv2.fitEllipse(cnt)
+        # contour_ratio = (max(MA, ma) - min(MA, ma)) / max(MA, ma)
         good = 1
         (x, y), (width, height), angle = cv2.minAreaRect(cnt)
-        contour_area = width*height*0.25
+        contour_area = width * height * 0.25
         contour_ratio = (max(width, height) - min(width, height)) / max(width, height)
+        height_out = max(width, height) * 0.5
+        width_out = min(width, height) * 0.5
     else:
         angle = 0
         contour_ratio = 0
         good = 0
         contour_area = 0
+        width_out = 0
+        height_out = 0
         print("CNT FALSE!!")
 
     if angle > 90.0:
@@ -149,7 +157,7 @@ def getArea(mark_mask):
         print("Rotation: theta = ")
         print(angle)
 
-    return contour_ratio, contour_area, good
+    return contour_ratio, contour_area, width_out, height_out, good
 
 
 def saveMarkers(map_source_directory):
@@ -168,13 +176,14 @@ def saveMarkers(map_source_directory):
         name = "./markers/markers_" + str(map_c) + ".png"
         Image.fromarray(markers).save(name, bits=32)
 
-def getMarkers(map_name, map_id, object_mask,dhm_norm):
+
+def getMarkers(map_name, map_id, object_mask, dhm_norm):
     # TODO: tweak iterations for sure bg and fg.
     # TODO: should sure_fg be the input mask or should we erode it?
 
     # Import ortho map for watershed. Import house mask.
     ortho = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1)
-    mask = extract_buildings.getBuildings(ortho, object_mask,dhm_norm)
+    mask = extract_buildings.getBuildings(ortho, object_mask, dhm_norm)
 
     # Finding certain background area
     kernel = np.ones((3, 3), np.uint8)  # Minimal Kernel size.
@@ -228,12 +237,21 @@ def getMarkers(map_name, map_id, object_mask,dhm_norm):
 
     return markers1
 
+
 def printHdbscanResult(hd_cluster, feature_data, stat=True, print_all=False, visulize_clustering=False):
     histo = np.bincount(hd_cluster.labels_ + 1)
     nbr_of_datapoints = max(feature_data.shape)
     not_classified = histo[0]
     nbr_of_classes = max(histo.shape)
     proc = not_classified * 100 / nbr_of_datapoints
+    if nbr_of_classes <= 1:
+        return 100, 100
+
+    largest_class = (max(histo[1::]) * 100 / nbr_of_datapoints)
+    if largest_class > 75 and nbr_of_classes > 5:
+        return 100, 100
+    elif largest_class > 75:
+        return 100, 100
 
     if stat:
         print("number of classes(including not a class): ", nbr_of_classes)
@@ -260,121 +278,117 @@ def printHdbscanResult(hd_cluster, feature_data, stat=True, print_all=False, vis
         plt.scatter(*projection.T, s=50, linewidth=0, c=cluster_member_colors, alpha=0.25)
         plt.show()
 
-    return (proc, nbr_of_classes)
-
-def getColor(l,sub_cluster=False):
+    return proc, nbr_of_classes
 
 
+def getColor(l, sub_cluster=False):
     if not sub_cluster:
         return getColorFull(l)
 
     if l < 1:
         return 255, 255, 255
     if l < 2:
-        return 255, 1,   1
+        return 255, 1, 1
     if l < 3:
-        return 1,   255, 1
+        return 1, 255, 1
     if l < 4:
-        return 1,   1,   255
+        return 1, 1, 255
     if l < 101:
         return 255, 255, 1
     if l < 102:
-        return 255, 1,   255
+        return 255, 1, 255
     if l < 103:
-        return 1,   255, 255
+        return 1, 255, 255
     if l < 104:
         return 255, 128, 1
     if l < 201:
         return 153, 255, 51
     if l < 202:
-        return 1,   153, 76
+        return 1, 153, 76
     if l < 203:
         return 102, 178, 255
     if l < 204:
-        return 127, 1,   255
+        return 127, 1, 255
     if l < 301:
         return 255, 153, 204
     if l < 302:
         return 250, 158, 200
     if l < 303:
-        return 128, 1,   1
+        return 128, 1, 1
     if l < 304:
-        return 1,   128, 1
+        return 1, 128, 1
     if l < 401:
-        return 1,   1,   128
+        return 1, 1, 128
     if l < 402:
         return 128, 128, 1
 
 
 def getColorFull(l):
-
     if l < 1:
-        return 255, 153, 204
+        return 51, 102, 1  #
     if l < 2:
-        return 255, 1,   1
+        return 128, 255, 1  #
     if l < 3:
-        return 1,   255, 1
+        return 204, 255, 153  #
     if l < 4:
-        return 1,   1,   255
+        return 102, 255, 102  #
     if l < 5:
-        return 255, 255, 1
+        return 1, 255, 1  #
     if l < 6:
-        return 255, 1,   255
+        return 1, 153, 76  #
     if l < 7:
-        return 1,   255, 255
+        return 153, 0, 0  # Red
     if l < 8:
-        return 255, 128, 1
+        return 255, 51, 51
     if l < 9:
-        return 153, 255, 51
+        return 255, 153, 151
     if l < 10:
-        return 1,   153, 76
+        return 255, 173, 106
     if l < 11:
-        return 102, 178, 255
+        return 255, 128, 1
     if l < 12:
-        return 127, 1,   255
+        return 255, 255, 1
     if l < 13:
-        return 255, 153, 204
+        return 1, 1, 153 # Blue
     if l < 14:
-        return 250, 235, 240
+        return 1, 1, 255
     if l < 15:
-        return 128, 1,   1
+        return 103, 178, 255
     if l < 16:
-        return 1,   128, 1
+        return 178, 102, 255
     if l < 17:
-        return 1,   1,   128
+        return 255, 1, 255
     if l < 18:
-        return 128, 128, 1
+        return 153, 1, 153
+
+    return 1, 1, 1
 
 
-
-    return 1,1,1
-
-
-def findOptimalHdbParameters(cluster_data, save=False, mcs_start=4,mcs_end=400, mcs_delta=1, ms_delta=1,
-                             cls_low=4, cls_high=5, proc=40):
-
+def findOptimalHdbParameters(cluster_data, save=False, mcs_delta=1, ms_delta=1,
+                             cls_low=4, cls_high=5, proc=50):
     if max(cluster_data.shape) < 2500:
         mcs_start = 4
         mcs_end = 100
-
+    elif max(cluster_data.shape) < 7500:
+        mcs_start = 60
+        mcs_end = 140
+    else:
+        mcs_start = 90
+        mcs_end = 140
 
     if save is False:
         best_parameters = np.load("./HdbP/HdbParameters_12461.npy")
         return best_parameters.item(0), best_parameters.item(1)
 
-
     print("Sub Clustering")
-    mcs_end = min(mcs_end, int(max(cluster_data.shape)/2))
-
+    mcs_end = min(mcs_end, int(max(cluster_data.shape) / 2))
 
     best_mcs, best_ms, best_P = findClusterParameters(cluster_data, mcs_start, mcs_end, mcs_delta,
                                                       ms_delta, cls_low, cls_high, proc)
-
-
     best_parameters = np.array([best_mcs, best_ms, best_P])
     print(best_parameters)
     if save:
-        name = "./HdbP/HdbParameters_" + str(max(cluster_data.shape)) + ".npy"
+        name = "./HdbP/HdbParameters_" + str(max(cluster_data.shape)) + str(int(time.time())) + ".npy"
         np.save(name, best_parameters)
 
     print(best_parameters)
@@ -383,19 +397,16 @@ def findOptimalHdbParameters(cluster_data, save=False, mcs_start=4,mcs_end=400, 
 
 def findClusterParameters(cluster_data, mcs_start, mcs_end, mcs_delta, ms_delta, nbr_cls_low,
                           nbr_cls_high, proc_high):
-
     best_mcs = 0
     best_ms = 0
     best_P = 90
-
-
 
     for mcs in range(mcs_start, mcs_end, mcs_delta):
         good_param_found = False
         if not mcs % 20:
             print("MCS: ", mcs)
-            #ms_delta += 1
-        for ms in range(1, mcs, ms_delta):
+            ms_delta += 1
+        for ms in range(1, max(mcs, 80), ms_delta):
             # print(" Starting HDBSCAN, data size:", cluster_data.shape)
             hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=mcs, min_samples=ms,
                                          alpha=1.0)
@@ -404,18 +415,18 @@ def findClusterParameters(cluster_data, mcs_start, mcs_end, mcs_delta, ms_delta,
             # Lables
             proc, nbr_cls = printHdbscanResult(hd_cluster, cluster_data, stat=False)
 
-            if nbr_cls >= nbr_cls_low and nbr_cls < nbr_cls_high and proc < proc_high:
+            if nbr_cls >= nbr_cls_low and nbr_cls <= nbr_cls_high and proc < proc_high:
                 # print("MCS: ", mcs, " & MS: ", ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
-                if proc < best_P:
+                if proc <= best_P:
                     best_mcs = mcs
                     best_ms = ms
                     best_P = proc
                     print("MCS: ", best_mcs, " & MS: ", best_ms, "Gives best %: ", proc, " w/ ", nbr_cls, " classes")
                     printHdbscanResult(hd_cluster, cluster_data, print_all=True)
-                    if best_P < 3:
-                        print("Breaking search: Proc < 5%")
-                        good_param_found = True
-                        break
+                    # if best_P < 3:
+                    # print("Breaking search: Proc < 5%")
+                    # good_param_found = True
+                    # break
         if good_param_found:
             break
 
@@ -425,7 +436,6 @@ def findClusterParameters(cluster_data, mcs_start, mcs_end, mcs_delta, ms_delta,
 def printOptimalHdb(cluster_data, mcs, ms, stat=True, print_all_statistic=True, visulize_clustering=False):
     print("optimal: ", mcs, ms)
 
-
     hd_cluster = hdbscan.HDBSCAN(algorithm='best', metric='euclidean', min_cluster_size=mcs, min_samples=ms,
                                  alpha=1.0)
     hd_cluster.fit(cluster_data)
@@ -434,6 +444,7 @@ def printOptimalHdb(cluster_data, mcs, ms, stat=True, print_all_statistic=True, 
     proc, nbr_cls = printHdbscanResult(hd_cluster, cluster_data,
                                        stat, print_all_statistic, visulize_clustering)
     return hd_cluster
+
 
 def getOffset(map):
     x_offset = 0
@@ -451,21 +462,22 @@ def getOffset(map):
 
     return x_offset, y_offset
 
-def colorer(TREAHD_ID, cluster_data, nbr_feat_max, map_c, markers, CORES, cls_mask, nbr_feat_min,sub=False):
 
+def colorer(TREAHD_ID, cluster_data, nbr_feat_max, map_c, markers, CORES, cls_mask, nbr_feat_min, sub=False):
     for feat in range(TREAHD_ID, nbr_feat_max, CORES):
         if cluster_data[feat, nbr_feat_min - 1] == map_c:
             if not feat % (nbr_feat_max / 10):
                 print("Map: ", map_c, " || Thread: ", TREAHD_ID, " || done: ", ((feat * 100) / nbr_feat_max), "%")
             marker_id = cluster_data[feat, nbr_feat_min - 2]
             label = cluster_data[feat, nbr_feat_min]
-            b, g, r = getColor(label,sub_cluster=sub)
+            r, g, b = getColor(label, sub_cluster=sub)
             index_pos = np.where(markers == marker_id)
             cls_mask[index_pos] = [r, g, b]
     if TREAHD_ID == 0:
         print("map: ", map_c, " is done!\n\n")
 
-def colorCluster(cluster_data, map_source_directory, CORES, scale=None,save=None,sub_c=True):
+
+def colorCluster(cluster_data, map_source_directory, CORES, scale=None, save=None, sub_c=False, im_name='_'):
     if scale is None:
         scale = 0.5
 
@@ -476,7 +488,6 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None,save=None
         print("Coloring Subcluster Style")
     else:
         print("Coloring Full cluster")
-
 
     nbr_feat_min = min(cluster_data.shape) - 1
     nbr_feat_max = max(cluster_data.shape) - 1
@@ -501,7 +512,7 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None,save=None
         threads = []
         for i in range(0, CORES):
             t = threading.Thread(target=colorer, args=(i, cluster_data, nbr_feat_max, map_c,
-                                                       markers, CORES, cls_mask, nbr_feat_min,sub_c))
+                                                       markers, CORES, cls_mask, nbr_feat_min, sub_c))
             threads.append(t)
             t.start()
 
@@ -522,32 +533,29 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None,save=None
     print("Time:")
     print(time.time() - TIME)
 
-
-
     if save:
         print("Saving Class image")
         print("Shape FD = ", im_full.shape)
-        Image.fromarray(im_full.astype('uint8')).save("ColoredImage.jpeg")
+        Image.fromarray(im_full.astype('uint8')).save("ColoredImage" + im_name + ".jpeg")
     else:
         print("Show Image")
         Image.fromarray(im_full.astype('uint8')).show()
 
 
-def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CORES,THREAD_ID):
-
+def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id, que, CORES, THREAD_ID):
     cutout_size = 1000
 
     feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
     image_size = dhm.shape
     to_range = np.amax(markers) + 1
     start = 2 + THREAD_ID
-    for marker_id in range(start, to_range,CORES):
+    for marker_id in range(start, to_range, CORES):
 
         # Temporary holder for fueatures
         feature_data_temp = np.empty([NUMBER_OF_FEATURES, 1])
 
         # Print Progress
-        getProgress(marker_id, 50,THREAD_ID,to_range,map_id)
+        getProgress(marker_id, 50, THREAD_ID, to_range, map_id)
 
         # Check if object exists
         indices = np.argwhere(markers == marker_id)
@@ -569,7 +577,7 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CO
             continue
 
         # Centrum of object
-        contour_ratio, contour_area, good = getArea(cutout)
+        contour_ratio, contour_area, contour_width, contour_height, good = getArea(cutout)
 
         if good == 0:
             print("Not good")
@@ -583,33 +591,35 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id,que,CO
         sea_level, ground_slope = getDsmFeatures(dsm_mask)
 
         # Add data to temporary array
+        # Klustra bara Area, Sen ta bort
+        # Normalisera alla men meter
+        #
         feature_data_temp[0, 0] = area  # m^2
-        feature_data_temp[1, 0] = max_height # m
-        feature_data_temp[2, 0] = avg_height # m
-        feature_data_temp[3, 0] = terrain
-        feature_data_temp[4, 0] = forrest
-        feature_data_temp[5, 0] = road
-        feature_data_temp[6, 0] = water
-        feature_data_temp[7, 0] = object_cls
-        feature_data_temp[8, 0] = ground_slope
-        feature_data_temp[9, 0] = sea_level # m
-        feature_data_temp[10, 0] = contour_ratio # add w / h (m)
-        feature_data_temp[11, 0] = min(1, (area/contour_area))
-        feature_data_temp[12, 0] = marker_id
-        feature_data_temp[13, 0] = map_id
+        feature_data_temp[1, 0] = max_height  # m
+        feature_data_temp[2, 0] = avg_height  # m
+        feature_data_temp[3, 0] = sea_level  # m
+        feature_data_temp[4, 0] = contour_width  # m
+        feature_data_temp[5, 0] = contour_height  # m
+
+        feature_data_temp[6, 0] = terrain
+        feature_data_temp[7, 0] = forrest
+        feature_data_temp[8, 0] = road
+        feature_data_temp[9, 0] = water
+        feature_data_temp[10, 0] = object_cls
+
+        feature_data_temp[11, 0] = marker_id
+        feature_data_temp[12, 0] = map_id
 
         feature_data = np.hstack((feature_data, feature_data_temp))
 
     # Clean and normalize clusterdata
     feature_data = np.delete(feature_data, 0, 1)
-
-
-    print("T_ID: ",THREAD_ID, " shape: ", feature_data.shape)
     que.put(feature_data)
 
-def getFeatures(map_source_directory,CORES,new_markers=None,filename=None,load=False,save=False):
+
+def getFeatures(map_source_directory, CORES, new_markers=None, filename=None, load=False, save=False):
     """thread worker function"""
-    
+
     if new_markers is None:
         new_markers = False
     if filename is None:
@@ -622,8 +632,7 @@ def getFeatures(map_source_directory,CORES,new_markers=None,filename=None,load=F
         print("Using old Features")
         return np.transpose(np.load(filename))
 
-
-    NUMBER_OF_FEATURES = 14
+    NUMBER_OF_FEATURES = 13
     feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
     TIME = time.time()
     for x in range(0, 11):  # 0:11
@@ -635,7 +644,6 @@ def getFeatures(map_source_directory,CORES,new_markers=None,filename=None,load=F
         dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
         cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
 
-
         print("Using Old Markers")
         name = "./markers/markers_" + str(x) + ".png"
         markers = np.asarray(Image.open(name))
@@ -645,7 +653,7 @@ def getFeatures(map_source_directory,CORES,new_markers=None,filename=None,load=F
         threads = []
         for i in range(0, CORES):
             t = threading.Thread(target=extractFeatureData,
-                                 args=(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, x,que,CORES,i))
+                                 args=(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, x, que, CORES, i))
             threads.append(t)
             t.start()
 
@@ -662,10 +670,17 @@ def getFeatures(map_source_directory,CORES,new_markers=None,filename=None,load=F
 
     feature_data = np.delete(feature_data, 0, 1)
 
-
     if new_markers or save:
         print("Saving Features")
         print("Shape FD = ", feature_data.shape)
         np.save(filename, feature_data)
 
     return feature_data
+
+
+def scatterPlot(cluster_data, feat1, feat2, figure=0, name_x='plot_x',name_y='plot_y'):
+    plt.figure(figure)
+    plt.plot(cluster_data[:, feat1], cluster_data[:, feat2], 'ro')
+    plt.ylabel(name_y)
+    plt.xlabel(name_x)
+    plt.show()

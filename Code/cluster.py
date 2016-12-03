@@ -12,18 +12,16 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
 
     if sub_clustering:
         print("Mode: Sub Clustering")
-        nbr_cls_high = 5
-        nbr_cls_low = 4
-        mcs_e = 240
+        nbr_cls_high = 7
+        nbr_cls_low = 5
         # Use Area & avg height / Vol
-        cluster_first = cluster_data[:, 0:3]
+        cluster_first = np.copy(cluster_data[:, 0:last_feat - 1])
     else:
         print("Mode: Full Clustering")
-        nbr_cls_high = 10
-        nbr_cls_low = 7
-        mcs_e = 400
+        nbr_cls_high = 15
+        nbr_cls_low = 8
         # Use all features
-        cluster_first = cluster_data[:, 0:last_feat - 1]
+        cluster_first = np.copy(cluster_data[:, 0:last_feat - 1])
 
 
 
@@ -34,8 +32,7 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
     print(cluster_first.shape)
 
     mcs, ms = object.findOptimalHdbParameters(cluster_first, save=True, cls_high=nbr_cls_high,
-                                              cls_low=nbr_cls_low,mcs_end=mcs_e,mcs_delta=1,ms_delta=1,
-                                              mcs_start=4)
+                                              cls_low=nbr_cls_low,mcs_delta=1,ms_delta=1)
     print(mcs, ms)
 
     hd_cluster = object.printOptimalHdb(cluster_first, mcs, ms, print_all_statistic=True)
@@ -48,6 +45,22 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
 
     # Make unclassified data label 0
     cluster_data[:, last_feat] = cluster_data[:, last_feat] + 1
+
+    # New code
+    """
+    a = cluster_data[:,last_feat]
+    counts = np.bincount(a.astype(int) )
+    print(counts)
+    house_index = np.argmax(counts)
+    not_house = np.where(cluster_data[:, last_feat] != house_index)
+    house = np.where(cluster_data[:, last_feat] == house_index)
+    cluster_data[not_house, last_feat] = 0
+    cluster_data[house, last_feat] = 1
+    a = cluster_data[:, last_feat]
+    counts = np.bincount(a.astype(int))
+    print(counts)
+    """
+    # ------
 
     for_range = range(0, 1)
     if sub_clustering:
@@ -67,8 +80,7 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
         # Find optimal Parameters
         print("For label: ", label, "  || cluster size:  ", cluster_current.shape)
         mcs, ms = object.findOptimalHdbParameters(cluster_current[:, 0:last_feat-2], save=True,
-                                                  cls_low=2,cls_high=4,proc=50, mcs_delta=1,ms_delta=1,
-                                                  mcs_end=400,mcs_start=4)
+                                                  cls_low=3,cls_high=4, mcs_delta=1,ms_delta=1)
         if mcs == 0:
             # Put back sub cluster and whole cluster
             cluster_current[:, last_feat] = 0
