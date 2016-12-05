@@ -130,7 +130,7 @@ for nbr_sub_cluster in range(3, 4):  # Number of subclasses to each class
         #print(histo)
         # Print Results
         #object.colorCluster(X, map_source_directory, CORES, scale=0.5, save=True,
-        #                    im_name="K_means_test_3_3_D20_K55")
+        #                    im_name=("K_means_test_" + str(first_cluster_size) + "_" + str(nbr_sub_cluster)))
 
 
 # Prepare Subcluster stage 3
@@ -154,7 +154,7 @@ for current_label in range(0, nbr_sub_cluster * first_cluster_size, nbr_sub_clus
 
     X = np.vstack((X, cluster_current))
 
-object.colorCluster(X, map_source_directory, CORES, scale=0.5, save=True, im_name="K_means_3_3_2_D20_K55")
+object.colorCluster(X, map_source_directory, CORES, scale=0.5, save=True, im_name="K_means_3_3_2_D20_K55") # Change name
 histo = np.bincount(X[:, -1].astype(int))
 print("Histo X BF last FL", histo)
 
