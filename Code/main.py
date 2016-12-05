@@ -52,13 +52,15 @@ cols = min(feature_data.shape)
 # Plot area / area
 # object.scatterPlot(feature_data, 0, 1, name_x='mead heaght',name_y='water')
 
+# Skapa tom matris
 first_cluster = np.empty([rows, 4])
 
-first_cluster[:, 0] = np.copy(feature_data[:, 0])
-first_cluster[:, 1] = np.copy(np.multiply(feature_data[:, 4], feature_data[:, 5]))
-first_cluster[:, 2] = np.copy(feature_data[:, cols-2])
-first_cluster[:, 3] = np.copy(feature_data[:, cols-1])
-# object.scatterPlot(first_cluster, 0, 1,figure=1, name_x='real area',name_y='conture area')
+first_cluster[:, 0] = np.copy(feature_data[:, 0]/np.amax(feature_data[:, 0])) # True Area Normaliserad
+first_cluster[:, 1] = np.copy(np.multiply(feature_data[:, 4], feature_data[:, 5])) # Bound area width*height
+first_cluster[:, 1] = first_cluster[:, 1]/np.amax(first_cluster[:, 1]) # Normalisera
+first_cluster[:, 2] = np.copy(feature_data[:, cols-2])  # Marker ID
+first_cluster[:, 3] = np.copy(feature_data[:, cols-1])  # Map ID
+object.scatterPlot(first_cluster, 0, 1,figure=1, name_x='real area',name_y='conture area') # See graph
 
 X = np.copy(first_cluster)
 
@@ -66,6 +68,7 @@ X = np.copy(first_cluster)
 
 # Initialize the clusterer with n_clusters value and a random generator
 # seed of 10 for reproducibility.
+# 2 Clusters
 cluster_labels = KMeans(n_clusters=2, random_state=10).fit(X[:, 0:2])
 cluster_data_2 = np.copy(np.hstack((X, np.transpose(np.array([cluster_labels.labels_])))))
 #object.colorCluster(cluster_data_2, map_source_directory, CORES, scale=0.5, save=True, im_name="K_means_2")
@@ -74,6 +77,7 @@ cluster_data_2 = np.copy(np.hstack((X, np.transpose(np.array([cluster_labels.lab
 histo = np.bincount(cluster_data_2[:, -1].astype(int))
 print("c_D_2", histo)
 
+# 3 CLusters
 cluster_labels = KMeans(n_clusters=3, random_state=10).fit(X[:, 0:2])
 cluster_data_3 = np.copy(np.hstack((X, np.transpose(np.array([cluster_labels.labels_])))))
 
@@ -81,11 +85,13 @@ histo = np.bincount(cluster_data_3[:, -1].astype(int))
 print("c_D_3", histo)
 #object.colorCluster(cluster_data_3, map_source_directory, CORES, scale=0.125, save=True, im_name="K_means_3_new_color")
 
-label_holder = np.empty([rows, 2])
+# result
+label_holder = np.empty([rows, 2]) # 2 or 3
 label_holder[:, 0] = cluster_data_2[:, -1]
 label_holder[:, 1] = cluster_data_3[:, -1]
+# label_holder[:, 2] = cluster_data_4[:, -1]
 
-
+# Prepare Cluster stage 2 w new features
 sec_cluster = np.empty([rows, 7])
 sec_cluster[:, 0] = np.copy(feature_data[:, 1]/np.amax(feature_data[:, 1]))
 sec_cluster[:, 1] = np.copy(feature_data[:, 2]/np.amax(feature_data[:, 2]))
@@ -94,7 +100,7 @@ sec_cluster[:, 3] = np.copy(feature_data[:, 5]/np.amax(feature_data[:, 5]))
 sec_cluster[:, 4] = np.copy(feature_data[:, cols-2])
 sec_cluster[:, 5] = np.copy(feature_data[:, cols-1])
 
-
+# Try different number of subclusters
 for nbr_sub_cluster in range(3, 4):  # Number of subclasses to each class
     for first_cluster_size in range(3, 4):  # Number of classes before
         sec_cluster[:, 6] = label_holder[:, first_cluster_size-2]
@@ -122,16 +128,18 @@ for nbr_sub_cluster in range(3, 4):  # Number of subclasses to each class
             print("Xsample: ", X[0::700, -1])
         #histo = np.bincount(X[:, -1].astype(int))
         #print(histo)
+        # Print Results
         #object.colorCluster(X, map_source_directory, CORES, scale=0.5, save=True,
         #                    im_name="K_means_test_3_3_D20_K55")
 
 
+# Prepare Subcluster stage 3
 nbr_sub_cluster = 2
 first_cluster_size = 9
 X = np.copy(np.hstack((feature_data[:, 6:11], X[:, -3::])))
 X[:, -1] = X[:, -1] * 2
 
-
+# Cluster stage 3
 for current_label in range(0, nbr_sub_cluster * first_cluster_size, nbr_sub_cluster):
     print("Current_label: ", current_label)
     index_labels = np.where(X[:, -1] != current_label)
