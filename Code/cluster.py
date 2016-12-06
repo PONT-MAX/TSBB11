@@ -50,8 +50,9 @@ def cluster_data(cluster_data, save_cluster_data=False, save_filename='',sub_clu
     cluster_data[:, last_feat] = cluster_data[:, last_feat] + 1
 
     for_range = range(0, 1)
+
     if sub_clustering:
-        for_range = range(1, int(max(cluster_data[:, last_feat]) + 1)) + for_range
+        for_range = list(range(1, int(max(cluster_data[:, last_feat]) + 1))) + list(for_range)
 
     print("Find Optimal Parameters sub Clustering")
     for label in for_range:
