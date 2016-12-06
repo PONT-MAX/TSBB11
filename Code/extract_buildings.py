@@ -39,7 +39,7 @@ def get_buildings(ortho,object_mask, dhm):
     kernel = np.ones((7,7),np.uint8)
     better_morph = cv2.morphologyEx(better_morph, cv2.MORPH_CLOSE, kernel)
     better_morph = cv2.morphologyEx(better_morph, cv2.MORPH_OPEN, kernel)
-    Image.fromarray(better_morph).show()
+    #    Image.fromarray(better_morph).show()
 
     #making a 3 channel image of the thresholded image
     #thresh_3d = np.repeat(thresh1[:, :, np.newaxis], 3, axis=2)
@@ -62,11 +62,14 @@ def get_buildings(ortho,object_mask, dhm):
         #cv2.imshow('hough', rotated_boxes)
         #cv2.waitKey(0)
     """
+    
+    #rotated_box = help_functions.get_approx_box(better_morph)
+    #better_morph = np.repeat(better_morph,3,1)
+    # out = cv2.merge((better_morph,better_morph,better_morph),1)
+    approx_boxes = help_functions.get_approx_boxes(better_morph)
 
-    rotated_box = help_functions.get_rotated_box(better_morph)
-
-    return rotated_box
-    #return thresh_3d
+    #return rotated_box
+    return approx_boxes
 
     #see which components have a number of pixels that are above a certain number of connected pixels and open/close them
     #but not the smaller ones...

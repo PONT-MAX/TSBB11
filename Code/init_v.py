@@ -36,9 +36,9 @@ def get_map_array(type,map_name,print_info):
 
     map_array = np.array(Image.open('../Data/' + type + '/' + map_name + type2 + '.tif'))
 
-    if(print_info):
-        print('')
-        print(map_array.shape)
-        print(map_array.dtype)
+# if(print_info):
+#        print('')
+#        print(map_array.shape)
+#        print(map_array.dtype)
 
     return map_array

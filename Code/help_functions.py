@@ -89,6 +89,7 @@ def get_rotated_box(bin_im):
         box = cv2.boxPoints(rect)
         box = np.int0(box)
         cv2.drawContours(bin_im_out, [box], 0, (255, 0, 0), 2)
+
         """
         angle = rect[2];
         rect_size = rect[1];
@@ -103,6 +104,47 @@ def get_rotated_box(bin_im):
 
         """
     return bin_im_out   #, feat
+
+def get_approx_boxes(bin_im):
+    bin_im_out = bin_im.copy()
+    ret, contours, hierarchy = cv2.findContours(bin_im,mode = cv2.RETR_EXTERNAL,method =cv2.CHAIN_APPROX_SIMPLE)
+    bin_im_out = cv2.merge((bin_im_out,bin_im_out,bin_im_out)) # Making bin_im_out 3 channel to display colors.
+    for cnt in contours:
+            (x,y), (w,h), angle = cv2.minAreaRect(cnt)
+            rectarea = w*h
+            area = cv2.contourArea(cnt)
+            fillArea = area/rectarea
+            if fillArea > 0.65 and area <8000:
+                rect = cv2.minAreaRect(cnt)
+                box = cv2.boxPoints(rect)
+                box = np.int0(box)
+                cv2.drawContours(bin_im_out,[box],0,(255,0,0),-1)
+            # Draw bigger objects with help from perimeter lenght
+            else:
+                epsilon = 0.01*cv2.arcLength(cnt,True)
+                area_cont = cv2.contourArea(cnt)
+                approx = cv2.approxPolyDP(cnt,epsilon,True)
+                area_approx = cv2.contourArea(approx)
+                fillArea2 = area_approx/area_cont
+                cv2.drawContours(bin_im_out,[approx],0,(0,0,255),-1)
+                if fillArea2<0.95 and area>10000:
+                    epsilon = 0.005*cv2.arcLength(cnt,True)
+                    approx = cv2.approxPolyDP(cnt,epsilon,True)
+                    cv2.drawContours(bin_im_out,[approx],0,(0,0,255),-1)
+
+    # Make the red and blue contours into white
+    width, height, _ = bin_im_out.shape
+    img=np.zeros((width, height), np.uint8)
+    red = (255, 0, 0)
+    blue = (0, 0, 255)
+    indices = np.where(np.all(bin_im_out == red, axis=-1))
+    img[indices]=255
+    img2=np.zeros((width, height), np.uint8)
+    indices2 = np.where(np.all(bin_im_out == blue, axis=-1))
+    img2[indices2]=255
+    bin_im_out = img + img2
+
+    return bin_im_out
 
 def blob_sep(im, dhm):
     #separating buildings in the large blobs into smaller blobs
@@ -130,3 +172,4 @@ def more_morph(bin_im, labeled, no_blobs, stats, meanval, dhm):
         bin_im[stats[large, 1]:(stats[large, 1]+stats[large, 3]), stats[large, 0]:(stats[large, 0]+stats[large, 2])]=separated
 
     return bin_im
+
