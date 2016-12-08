@@ -1,69 +1,72 @@
-# import the necessary packages
-# from __future__ import print_function
-# import numpy as np
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#Import libraries
 
 from __future__ import absolute_import, print_function
+import cv2
 import numpy as np
-#import pyopencl as cl
-import init_v
+import random
 import visulation_export_image as vei
 from subprocess import call
 from PIL import Image
-import cv2
-import math
+from PIL import ImageOps
+import time
+import datetime
+from matplotlib import pyplot as plt
+import seaborn as sns
+import hdbscan
+from sklearn.manifold import TSNE
+from sklearn.datasets import load_digits
+from sklearn.preprocessing import StandardScaler
+from sklearn import preprocessing
+from itertools import chain
+
+#Import local files
+import init_v
+import object
 import extract_buildings
+import help_functions
+import multiprocessing
+import cluster
 
+#Set constants
+CORES = multiprocessing.cpu_count()
+print("Number of System Cores: ", CORES, "\n")
+NUMBER_OF_FEATURES = 15
+
+#########################################
+
+
+# Load map names
 map_source_directory = init_v.init_map_directory()
-map_name = map_source_directory[5]
+date = datetime.datetime.now()
+feature_data_filename = './numpy_arrays/feature_data_all_threads_final_' + \
+	str(date.month) + str(date.day) + str(date.hour) + str(date.minute) + '.npy'
+#feature_data_filename ='./numpy_arrays/feature_data_all_threads_final_1211423.npy'
 
-# call type w/: dtm,dsm,dhm,cls,ortho
-dtm =   init_v.get_map_array('dtm', map_name, True)
-dhm =   init_v.get_map_array('dhm', map_name, True)
-cls =   init_v.get_map_array('cls', map_name, True)
-ortho =   init_v.get_map_array('ortho', map_name, True)
-
-dhm_norm=np.copy(dhm)
-maxval=np.amax(dhm)
-dhm_norm=dhm_norm/maxval
-# Pre processing
-
-# Extract treshold
-# less then 2 meters high is not an object (house)
-
-dhm[dhm<2] = 0
-
-# Make copy for use later
-cls2 = np.copy(cls)
-# Remove obejct class
-cls2[cls2 == 2] = 0
-
-# Extract object class
-cls[cls != 2] = 0
-cls[cls == 2] = 1
-
-object_mask = np.multiply(dhm,cls)
-object_mask[object_mask>0.0] = 2
-cls2 = cls2 + object_mask
-
-lines =extract_buildings.get_buildings(ortho, object_mask, dhm_norm)
-
-# Edge detection adn extraction
-
-# MOG
-
-# Create new map on dtm
-
-# Export to visual
+# Extract features
+print("Loading feature data... ")
+feature_data = object.getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURES,
+	new_markers=True,filename=feature_data_filename,
+	load_features=False,save_features=True)
 
 
-#vei.visulation_export(map_name)
-#call(["./visulation/lab"])
+print("\n")
+#feature_data[:,1] = np.square(feature_data[:,1])
+feature_data = feature_data[:, np.array([0,1,2,8,9,10,11,12,13,14])]
 
-#take back
-Image.fromarray(lines).show()
+#cluster_data1 = cluster.cluster_data(feature_data,
+#    save_cluster_data=True,save_filename='cd_full_cluster1.npy',sub_clustering=False)
 
 
-#cv2.imshow('hough', lines)
-#cv2.waitKey(0)
+
+
+
+cluster_data2 = cluster.cluster_data(feature_data,
+    save_cluster_data=True,save_filename='cd_sub_cluster1.npy',sub_clustering=True)
+
+
+
+
+
+print("\n")
+object.colorCluster(cluster_data2, map_source_directory,CORES,scale=0.5,save=False,sub_c=True)
+#object.colorCluster(cluster_data1, map_source_directory,CORES,scale=0.5,save=False,sub_c=False)

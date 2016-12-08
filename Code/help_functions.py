@@ -3,8 +3,27 @@ import cv2
 import math
 from PIL import Image
 import scipy
+import object
 
-def detecting_blobs(object_mask, ortho):
+def getObject(cls,dhm):
+    # Extract treshold
+    # less then 2 meters high is not an object (house)
+    dhm[dhm<2] = 0
+
+    # Make copy for use later
+    cls2 = np.copy(cls)
+    # Remove obejct class
+    cls2[cls2 == 2] = 0
+
+    # Extract object class
+    cls[cls != 2] = 0
+    cls[cls == 2] = 1
+
+    object_mask = np.multiply(dhm,cls)
+    object_mask[object_mask>0.0] = 2
+    return object_mask
+
+def getBlobs(object_mask, ortho ):
 
     #hough-transform to retrive the buildings
     minLineLength = 30
@@ -39,8 +58,7 @@ def detecting_blobs(object_mask, ortho):
     return number_of_blobs, labels, stats, ortho_png
 
 
-
-def crop_im_part(ortho, stats,margin):
+def cropImPart(ortho, stats,margin):
     (h,w) = ortho.shape[:2]
 
     left_coord = stats[0]
@@ -73,7 +91,7 @@ def crop_im_part(ortho, stats,margin):
     return cropped_im, [left_coord, right_coord, top_coord, bottom_coord]
 
 
-def get_rotated_box(bin_im):
+def getRotatedBox(bin_im):
     #start at 1 since 0 is background
     #for blob in range(1, no_blobs):
     bin_im_out=bin_im.copy()
@@ -105,7 +123,7 @@ def get_rotated_box(bin_im):
         """
     return bin_im_out   #, feat
 
-def get_approx_boxes(bin_im):
+def getApproxBoxes(bin_im):
     bin_im_out = bin_im.copy()
     ret, contours, hierarchy = cv2.findContours(bin_im,mode = cv2.RETR_EXTERNAL,method =cv2.CHAIN_APPROX_SIMPLE)
     bin_im_out = cv2.merge((bin_im_out,bin_im_out,bin_im_out)) # Making bin_im_out 3 channel to display colors.
@@ -146,7 +164,13 @@ def get_approx_boxes(bin_im):
 
     return bin_im_out
 
-def blob_sep(im, dhm):
+#def getImprovedHouses(a, b, c, d)
+##    img_dsm = cv2.imread('dsm_n.png')
+#   nice_map = getApproxBoxes(bin_im)
+
+
+
+def blobSep(im, dhm):
     #separating buildings in the large blobs into smaller blobs
     im=im/255
     object_mask = np.multiply(dhm,im)
@@ -157,7 +181,7 @@ def blob_sep(im, dhm):
     return object_mask
 
 
-def more_morph(bin_im, labeled, no_blobs, stats, meanval, dhm):
+def moreMorph(bin_im, labeled, no_blobs, stats, meanval, dhm):
 
     #limi=2*meanval
     limi=1.6*meanval
@@ -166,10 +190,9 @@ def more_morph(bin_im, labeled, no_blobs, stats, meanval, dhm):
         if stats[blob,4]>limi:
             large_areas.append(blob)
     for large in large_areas:
-        patch,_=crop_im_part(bin_im, stats[large, :],0)
-        dhm_patch,_=crop_im_part(dhm, stats[large, :],0)
-        separated=blob_sep(patch, dhm_patch)
+        patch,_=cropImPart(bin_im, stats[large, :],0)
+        dhm_patch,_=cropImPart(dhm, stats[large, :],0)
+        separated=blobSep(patch, dhm_patch)
         bin_im[stats[large, 1]:(stats[large, 1]+stats[large, 3]), stats[large, 0]:(stats[large, 0]+stats[large, 2])]=separated
 
     return bin_im
-
