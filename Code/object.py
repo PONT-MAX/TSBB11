@@ -138,6 +138,7 @@ def getArea(mark_mask):
         contour_ratio = (max(width, height) - min(width, height)) / max(width, height)
         height_out = max(width, height) * 0.5
         width_out = min(width, height) * 0.5
+        arc_length = cv2.arcLength(cnt, True)
     else:
         angle = 0
         contour_ratio = 0
@@ -145,6 +146,7 @@ def getArea(mark_mask):
         contour_area = 0
         width_out = 0
         height_out = 0
+        arc_length = 0
         print("CNT FALSE!!")
 
     if angle > 90.0:
@@ -157,7 +159,7 @@ def getArea(mark_mask):
         print("Rotation: theta = ")
         print(angle)
 
-    return contour_ratio, contour_area, width_out, height_out, good
+    return contour_ratio, contour_area, width_out, height_out, good, arc_length
 
 
 def saveMarkers(map_source_directory):
@@ -325,23 +327,23 @@ def getColor(l, sub_cluster=False):
 
 def getColorFull(l):
     if l < 1:
-        return 51, 102, 1  #
-    if l < 2:
-        return 128, 255, 1  #
-    if l < 3:
-        return 204, 255, 153  #
-    if l < 4:
-        return 102, 255, 102  #
-    if l < 5:
         return 1, 255, 1  #
+    if l < 2:
+        return 1, 255, 128  #
+    if l < 3:
+        return 1, 255, 255  #
+    if l < 4:
+        return 255, 1, 1  #
+    if l < 5:
+        return 255, 128, 1  #
     if l < 6:
-        return 1, 153, 76  #
+        return 255, 255, 1  #
     if l < 7:
-        return 153, 0, 0  # Red
+        return 1, 1, 255  # Red
     if l < 8:
-        return 255, 51, 51
+        return 127, 1, 255
     if l < 9:
-        return 255, 153, 151
+        return 255, 1, 255
     if l < 10:
         return 255, 173, 106
     if l < 11:
@@ -577,14 +579,14 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id, que, 
             continue
 
         # Centrum of object
-        contour_ratio, contour_area, contour_width, contour_height, good = getArea(cutout)
+        contour_ratio, contour_area, contour_width, contour_height, good, arc_length = getArea(cutout)
 
         if good == 0:
             print("Not good")
             continue
 
         # Get procentage of each class Neighbouring the object
-        terrain, forrest, road, water, object_cls = getNeighbourClass(cutout, cls_cutout)
+        # terrain, forrest, road, water, object_cls = getNeighbourClass(cutout, cls_cutout)
 
         # Get data from DSM
         dsm_mask = np.uint8(cutout) * dsm_cutout
@@ -595,20 +597,25 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id, que, 
         # Normalisera alla men meter
         #
         feature_data_temp[0, 0] = area  # m^2
+
         feature_data_temp[1, 0] = max_height  # m
         feature_data_temp[2, 0] = avg_height  # m
         feature_data_temp[3, 0] = sea_level  # m
         feature_data_temp[4, 0] = contour_width  # m
         feature_data_temp[5, 0] = contour_height  # m
+        feature_data_temp[6, 0] = arc_length  # m
 
+        feature_data_temp[7, 0] = marker_id
+        feature_data_temp[8, 0] = map_id
+
+        """
         feature_data_temp[6, 0] = terrain
         feature_data_temp[7, 0] = forrest
         feature_data_temp[8, 0] = road
         feature_data_temp[9, 0] = water
         feature_data_temp[10, 0] = object_cls
+        """
 
-        feature_data_temp[11, 0] = marker_id
-        feature_data_temp[12, 0] = map_id
 
         feature_data = np.hstack((feature_data, feature_data_temp))
 
@@ -632,7 +639,7 @@ def getFeatures(map_source_directory, CORES, new_markers=None, filename=None, lo
         print("Using old Features")
         return np.transpose(np.load(filename))
 
-    NUMBER_OF_FEATURES = 13
+    NUMBER_OF_FEATURES = 9
     feature_data = np.zeros([NUMBER_OF_FEATURES, 1])
     TIME = time.time()
     for x in range(0, 11):  # 0:11
@@ -673,6 +680,7 @@ def getFeatures(map_source_directory, CORES, new_markers=None, filename=None, lo
     if new_markers or save:
         print("Saving Features")
         print("Shape FD = ", feature_data.shape)
+        print("\n\nAr du helt saker pa att andrade NUMBER oF FEATURES ?!?!?!?!?!?!?!!?!!?!?!?!")
         np.save(filename, feature_data)
 
     return feature_data
