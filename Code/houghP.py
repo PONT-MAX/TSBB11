@@ -90,7 +90,7 @@ def houghP(img, patch, coord, all_channels):
 
 		part_of_image_clean = img[coord[0]:coord[1], coord[2]:coord[3]]
 		
-		selected_lines, select_lines_itered, blob_coords= select_lines(patch, total)
+		selected_lines, select_lines_itered, blob_coords= selectLines(patch, total)
 		for x in range(0, len(selected_lines)):
 			for x1, y1, x2, y2 in selected_lines[x]:
 			   cv2.line(part_of_image_clean, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -101,7 +101,7 @@ def houghP(img, patch, coord, all_channels):
 		return part_of_image, selected_lines
 
 # Remove all hough lines which do not intersect with blob from binary mask
-def select_lines(patch, line_list):
+def selectLines(patch, line_list):
 
 	# get pixelcoordinates where blob is white
 	y,x = np.where(patch == 255)
