@@ -18,6 +18,12 @@ from sklearn.datasets import load_digits
 from sklearn.preprocessing import StandardScaler
 from sklearn import preprocessing
 from itertools import chain
+from sklearn.cluster import KMeans
+from sklearn import mixture
+from sklearn.metrics import silhouette_samples, silhouette_score
+import matplotlib.cm as cm
+import sub_clustering as sc
+
 
 #Import local files
 import init_v
@@ -30,7 +36,8 @@ import cluster
 #Set constants
 CORES = multiprocessing.cpu_count()
 print("Number of System Cores: ", CORES, "\n")
-NUMBER_OF_FEATURES = 15
+
+NUMBER_OF_FEATURES = 9
 
 #########################################
 
@@ -44,29 +51,14 @@ feature_data_filename = './numpy_arrays/feature_data_all_threads_final_' + \
 
 # Extract features
 print("Loading feature data... ")
-feature_data = object.getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURES,
-	new_markers=True,filename=feature_data_filename,
-	load_features=False,save_features=True)
 
-
-print("\n")
-#feature_data[:,1] = np.square(feature_data[:,1])
-feature_data = feature_data[:, np.array([0,1,2,8,9,10,11,12,13,14])]
-
-#cluster_data1 = cluster.cluster_data(feature_data,
-#    save_cluster_data=True,save_filename='cd_full_cluster1.npy',sub_clustering=False)
+feature_data = object.getFeatures(map_source_directory,
+    CORES,new_markers=False,filename='./numpy_arrays/feature_data_all_threads_final.npy', load_features=True)
 
 
 
+data = sc.kMeansSubCluster(feature_data,normalize=True)
+object.colorCluster(data,map_source_directory,CORES,save=True,im_name='New_data', scale=0.25)
+#sc.exportCluster2PNG(data, map_source_directory, CORES)
 
 
-cluster_data2 = cluster.cluster_data(feature_data,
-    save_cluster_data=True,save_filename='cd_sub_cluster1.npy',sub_clustering=True)
-
-
-
-
-
-print("\n")
-object.colorCluster(cluster_data2, map_source_directory,CORES,scale=0.5,save=False,sub_c=True)
-#object.colorCluster(cluster_data1, map_source_directory,CORES,scale=0.5,save=False,sub_c=False)
