@@ -49,7 +49,7 @@ feature_data = object.getFeatures(map_source_directory,
 
 
 data = sc.kMeansSubCluster(feature_data,normalize=True)
-#object.colorCluster(data, map_source_directory, CORES, scale=0.5, save=True, im_name="K_means_33_0_1_7_NC1")
-sc.exportCluster2PNG(data, map_source_directory, CORES)
+object.colorCluster(data,map_source_directory,CORES,save=True,im_name='New_data', scale=0.25)
+#sc.exportCluster2PNG(data, map_source_directory, CORES)
 
 

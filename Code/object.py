@@ -59,8 +59,8 @@ def getPixel(indices, cutout_size, image_size):
 
 def getCutOut(markers, dhm, dsm, cls, row, col, x, cutout_size):
     cutout = np.copy(markers[row:row + cutout_size, col:col + cutout_size])
-    dhm_cutout = np.uint8(dhm[row:row + cutout_size, col:col + cutout_size])
-    dsm_cutout = np.uint8(dsm[row:row + cutout_size, col:col + cutout_size])
+    dhm_cutout = dhm[row:row + cutout_size, col:col + cutout_size]
+    dsm_cutout = dsm[row:row + cutout_size, col:col + cutout_size]
     cls_cutout = cls[row:row + cutout_size, col:col + cutout_size]
 
     # TO BE DONE: Extract classdata and orthodata
@@ -570,7 +570,7 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id, que, 
         dhm_cutout, dsm_cutout, cls_cutout, cutout = getCutOut(markers, dhm, dsm, cls, row, col, marker_id, cutout_size)
 
         # Get features from Height map
-        dhm_mask = np.uint8(cutout) * dhm_cutout
+        dhm_mask = cutout * dhm_cutout
         max_height, avg_height, area = getVolume(dhm_mask)
 
         # Check if data is good
@@ -608,13 +608,7 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id, que, 
         feature_data_temp[7, 0] = marker_id
         feature_data_temp[8, 0] = map_id
 
-        """
-        feature_data_temp[6, 0] = terrain
-        feature_data_temp[7, 0] = forrest
-        feature_data_temp[8, 0] = road
-        feature_data_temp[9, 0] = water
-        feature_data_temp[10, 0] = object_cls
-        """
+
 
 
         feature_data = np.hstack((feature_data, feature_data_temp))
