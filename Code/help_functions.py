@@ -196,3 +196,63 @@ def moreMorph(bin_im, labeled, no_blobs, stats, meanval, dhm):
         bin_im[stats[large, 1]:(stats[large, 1]+stats[large, 3]), stats[large, 0]:(stats[large, 0]+stats[large, 2])]=separated
 
     return bin_im
+
+# returns all points in a line
+def lineIter(img, line):
+
+	x1 = line[0][0]
+	y1 = line[0][1]
+	x2 = line[0][2]
+	y2 = line[0][3]
+	steep = math.fabs(y2 - y1) > math.fabs(x2 - x1)
+	if steep:
+		t = x1
+		x1 = y1
+		y1 = t
+
+		t = x2
+		x2 = y2
+		y2 = t
+	also_steep = x1 > x2
+	if also_steep:
+
+		t = x1
+		x1 = x2
+		x2 = t
+		t = y1
+		y1 = y2
+		y2 = t
+
+	dx = x2 - x1
+	dy = math.fabs(y2 - y1)
+	error = 0.0
+	delta_error = 0.0; # Default if dx is zero
+	if dx != 0:
+		delta_error = math.fabs(dy/dx)
+
+	if y1 < y2:
+		y_step = 1 
+	else:
+		y_step = -1
+
+	y = y1
+	ret = list([])
+	for x in range(x1, x2 + 1):
+		if steep:
+			p = (y, x)
+		else:
+			p = (x, y)
+		if p[0] <= img.shape[1] and p[1] <= img.shape[0]:
+			ret.append(p)
+
+		error += delta_error
+		if error >= 0.5:
+			y += y_step
+			error -= 1
+
+	if also_steep:
+		ret.reverse()
+
+	return ret
+
+
