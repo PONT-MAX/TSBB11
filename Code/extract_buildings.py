@@ -6,8 +6,8 @@ import scipy
 from scipy import ndimage
 import help_functions
 
-def getBuildings(ortho,object_mask, dhm):
-    #THE DHM IS NORMALIZED!!!!
+def getBuildings(ortho,object_mask, dhm, minBlob, perc1, perc2):
+    #Note: dhm is normalized
     ortho_clean=ortho.copy()
 
     gray_image = cv2.cvtColor(ortho, cv2.COLOR_BGR2GRAY)
@@ -18,7 +18,7 @@ def getBuildings(ortho,object_mask, dhm):
 
     #detecting/counting ht enumber of blobs in the image
 
-    number_of_blobs, labels, stats, ortho_png = help_functions.getBlobs(object_mask, ortho)
+    number_of_blobs, labels, stats, ortho_png = help_functions.getBlobs(object_mask, ortho, minBlob)
 
     #labeling each blob to be able to use the for-loop on them
     labels=np.uint8(labels)
@@ -67,7 +67,7 @@ def getBuildings(ortho,object_mask, dhm):
     #rotated_box = help_functions.get_approx_box(better_morph)
     #better_morph = np.repeat(better_morph,3,1)
     # out = cv2.merge((better_morph,better_morph,better_morph),1)
-    approxBoxes = help_functions.getApproxBoxes(better_morph)
+    approxBoxes = help_functions.getApproxBoxes(better_morph, perc1, perc2)
 
     #return rotated_box
     return approxBoxes, better_morph

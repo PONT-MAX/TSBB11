@@ -14,13 +14,12 @@ def kMeansSubCluster(data, normalize=False):
     nbr_sub_cluster = 3
     first_cluster_size = 3
 
+    # First clustering w/ Area
     labels = KMeans(n_clusters=first_cluster_size, random_state=10).fit(data[:, 0:1])
     data = np.copy(np.hstack((data, np.transpose(np.array([labels.labels_])))))
 
+    # Spred the labels for subclustering
     data[:, -1] = data[:, -1] * nbr_sub_cluster
-
-    histo = np.bincount(data[:, -1].astype(int))
-    print(histo)
 
     for current_label in range(0, nbr_sub_cluster * first_cluster_size, nbr_sub_cluster):
         # Find cluster to subcluster
@@ -31,20 +30,18 @@ def kMeansSubCluster(data, normalize=False):
         cluster_current = np.delete(data, index_labels, 0)
         data = np.delete(data, index_rest, 0)
 
+        # Subcluster
         labels = KMeans(n_clusters=nbr_sub_cluster, random_state=10).fit(cluster_current[:, 1:7])
         cluster_current[:, -1] = labels.labels_ + current_label
 
+        # Put the data together again
         data = np.vstack((data, cluster_current))
-
-        histo = np.bincount(data[:, -1].astype(int))
-        print(histo)
-
 
     return data
 
 
 
-
+# Thread Worker for 'exportCluster2PNG' prints class to map
 def labeler(TREAHD_ID, cluster_data, map_c, markers, CORES, cls_mask):
     nbr_feat_max = max(cluster_data.shape) - 1
     for feat in range(TREAHD_ID, nbr_feat_max, CORES):
@@ -52,14 +49,15 @@ def labeler(TREAHD_ID, cluster_data, map_c, markers, CORES, cls_mask):
             if not feat % (nbr_feat_max / 10):
                 print("Map: ", map_c, " || Thread: ", TREAHD_ID, " || done: ", ((feat * 100) / nbr_feat_max), "%")
 
+            # Add one to labels to destinct from BG
             marker_id = cluster_data[feat, -3]
-            label = cluster_data[feat, -1]
+            label = cluster_data[feat, -1] + 1
             index_pos = np.where(markers == marker_id)
             cls_mask[index_pos] = label
     if TREAHD_ID == 0:
         print("map: ", map_c, " is done!\n\n")
 
-
+# Print labels to map for vricon vis
 def exportCluster2PNG(cluster_data, map_source_directory, CORES):
 
     TIME = time.time()

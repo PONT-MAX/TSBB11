@@ -1,8 +1,13 @@
 clear all
 close all
+clc
 dsm = imread('../Data/dsm/0153359e_582245n_20160905T073406Z_dsm.tif');
-dhm = imread('cp_map.png');
+dtm = imread('../Data/dtm/0153359e_582245n_20160905T073406Z_dtm.tif');
+%%
+
+dhm = imread('good_height_cv2.png');
 dhm_n = imread('good_height_without_norm_cv2.png');
+dhm_n = imread('good_height_new.png');
 
 max(max(dsm))
 max(max(dhm))
@@ -12,7 +17,7 @@ min(min(dsm))
 min(min(dhm))
 min(min(dhm_n))
 %%
-dsmc = dhm(500:1500,5600:6400);
+dsmc = dhm_n(500:1500,5600:6400);
 %dtmc = dtm(500:1500,5600:6400);
 
 %Uncomment for faster visualization

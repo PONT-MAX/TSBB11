@@ -5,9 +5,9 @@ from PIL import Image
 import scipy
 import object
 
+#Returns thresholded dhm on a certain elevation.
 def getObject(cls,dhm):
-    # Extract treshold
-    # less then 2 meters high is not an object (house)
+    # Less then 2 meters high is not an object (house)
     dhm[dhm<2] = 0
 
     # Make copy for use later
@@ -23,7 +23,8 @@ def getObject(cls,dhm):
     object_mask[object_mask>0.0] = 2
     return object_mask
 
-def getBlobs(object_mask, ortho ):
+
+def getBlobs(object_mask, ortho, minblob):
 
     #hough-transform to retrive the buildings
     minLineLength = 30
@@ -52,7 +53,7 @@ def getBlobs(object_mask, ortho ):
     #labeling the different blobs and removing the ones smaller than X pixels
     number_of_blobs, labels, stats, _ = cv2.connectedComponentsWithStats(opened,connectivity=4)
     for blob_number in range(0,number_of_blobs):
-        if stats[blob_number, 4]<300:
+        if stats[blob_number, 4] < minblob:
             labels[labels==blob_number]=0
 
     return number_of_blobs, labels, stats, ortho_png
@@ -81,7 +82,7 @@ def cropImPart(ortho, stats,margin):
     else:
         right_coord = right_coord + margin
 
-    if bottom_coord + 20 > h:
+    if bottom_coord + margin > h:
         bottom_coord = h
     else:
         bottom_coord = bottom_coord + margin
@@ -158,7 +159,7 @@ def quantizeAngle(rect):
         recta = (rect[0],rect[1], angle)
         return recta
 
-def getApproxBoxes(bin_im):
+def getApproxBoxes(bin_im, perc1, perc2):
     bin_im_out = bin_im.copy()
     ret, contours, hierarchy = cv2.findContours(bin_im,mode = cv2.RETR_EXTERNAL,method =cv2.CHAIN_APPROX_SIMPLE)
     bin_im_out = cv2.merge((bin_im_out,bin_im_out,bin_im_out)) # Making bin_im_out 3 channel to display colors.
@@ -176,14 +177,14 @@ def getApproxBoxes(bin_im):
                 cv2.drawContours(bin_im_out,[box],0,(255,0,0),-1)
             # Draw bigger objects with help from perimeter lenght
             else:
-                epsilon = 0.01*cv2.arcLength(cnt,True)
+                epsilon = perc1 * cv2.arcLength(cnt,True)
                 area_cont = cv2.contourArea(cnt)
                 approx = cv2.approxPolyDP(cnt,epsilon,True)
                 area_approx = cv2.contourArea(approx)
                 fillArea2 = area_approx/area_cont
                 cv2.drawContours(bin_im_out,[approx],0,(0,0,255),-1)
                 if fillArea2<0.95 and area>10000:
-                    epsilon = 0.005*cv2.arcLength(cnt,True)
+                    epsilon = perc2 * cv2.arcLength(cnt,True)
                     approx = cv2.approxPolyDP(cnt,epsilon,True)
                     cv2.drawContours(bin_im_out,[approx],0,(0,0,255),-1)
 
@@ -233,3 +234,61 @@ def moreMorph(bin_im, labeled, no_blobs, stats, meanval, dhm):
         bin_im[stats[large, 1]:(stats[large, 1]+stats[large, 3]), stats[large, 0]:(stats[large, 0]+stats[large, 2])]=separated
 
     return bin_im
+
+#Legacy function - returns all points on line
+def lineIter(img, line):
+    x1 = line[0][0]
+    y1 = line[0][1]
+    x2 = line[0][2]
+    y2 = line[0][3]
+    steep = math.fabs(y2 - y1) > math.fabs(x2 - x1)
+    if steep:
+        t = x1
+        x1 = y1
+        y1 = t
+
+        t = x2
+        x2 = y2
+        y2 = t
+    also_steep = x1 > x2
+    if also_steep:
+
+        t = x1
+        x1 = x2
+        x2 = t
+
+        t = y1
+        y1 = y2
+        y2 = t
+
+    dx = x2 - x1
+    dy = math.fabs(y2 - y1)
+    error = 0.0
+    delta_error = 0.0; # Default if dx is zero
+    if dx != 0:
+        delta_error = math.fabs(dy/dx)
+
+    if y1 < y2:
+        y_step = 1 
+    else:
+        y_step = -1
+
+    y = y1
+    ret = list([])
+    for x in range(x1, x2 + 1):
+        if steep:
+            p = (y, x)
+        else:
+            p = (x, y)
+        if p[0] <= img.shape[1] and p[1] <= img.shape[0]:
+            ret.append(p)
+
+        error += delta_error
+        if error >= 0.5:
+            y += y_step
+            error -= 1
+
+    if also_steep:
+        ret.reverse()
+
+    return ret
