@@ -123,6 +123,41 @@ def getRotatedBox(bin_im):
         """
     return bin_im_out   #, feat
 
+# A function that rotates buildings a little in order to align them.
+def quantizeAngle(rect):
+        (width,height)=rect[1]
+        angle=rect[2]
+        angle = math.floor(angle)
+        quote = width/height
+        angle = angle + 180
+        #if quote > 1:
+        if 8 <= angle <= 22:
+            angle = 15
+        if 23 <= angle <= 37:
+            angle = 30
+        if 38 <= angle <= 52:
+            angle = 45
+        if 53 <= angle <= 67:
+            angle = 60
+        if 68 <= angle <= 82:
+            angle = 75
+        if 83 <= angle <= 97:
+            angle = 90
+        if 98 <= angle <= 112:
+            angle = 105
+        if 113 <= angle <= 127:
+            angle = 120
+        if 128 <= angle <= 142:
+            angle = 135
+        if 143 <= angle <= 157:
+            angle = 150
+        if 158 <= angle <= 172:
+            angle = 165
+        if 173 <= angle or angle <= 7:
+            angle = 0
+        recta = (rect[0],rect[1], angle)
+        return recta
+
 def getApproxBoxes(bin_im):
     bin_im_out = bin_im.copy()
     ret, contours, hierarchy = cv2.findContours(bin_im,mode = cv2.RETR_EXTERNAL,method =cv2.CHAIN_APPROX_SIMPLE)
@@ -132,9 +167,11 @@ def getApproxBoxes(bin_im):
             rectarea = w*h
             area = cv2.contourArea(cnt)
             fillArea = area/rectarea
+            # Forces bounding boxes onto ish rectangular buildings
             if fillArea > 0.65 and area <8000:
                 rect = cv2.minAreaRect(cnt)
-                box = cv2.boxPoints(rect)
+                newRect=quantizeAngle(rect)
+                box = cv2.boxPoints(newRect)
                 box = np.int0(box)
                 cv2.drawContours(bin_im_out,[box],0,(255,0,0),-1)
             # Draw bigger objects with help from perimeter lenght
