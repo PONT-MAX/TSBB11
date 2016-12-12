@@ -48,15 +48,15 @@ print("Number of System Cores: ", CORES, "\n")
 # Load map names
 map_source_directory = init_v.init_map_directory()
 date = datetime.datetime.now()
-feature_data_filename = './numpy_arrays/feature_data_all_threads_final_' + \
-	str(date.month) + str(date.day) + str(date.hour) + str(date.minute) + '.npy'
-#feature_data_filename ='./numpy_arrays/name_of_loaded_array.npy'
+#feature_data_filename = './numpy_arrays/feature_data_all_threads_final_' + \
+	#str(date.month) + str(date.day) + str(date.hour) + str(date.minute) + '.npy'
+feature_data_filename ='./numpy_arrays/name_of_loaded_array.npy'
 
 # Extract features
 print("Loading feature data... ")
 feature_data = object.getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURES,
- MIN_BLOB_SIZE, PERCENTAGEOFARC1, PERCENTAGEOFARC2, new_markers=True, 
- filename=feature_data_filename,load_features=False,save_features=True)
+ MIN_BLOB_SIZE, PERCENTAGEOFARC1, PERCENTAGEOFARC2, new_markers=False, 
+ filename=feature_data_filename,load_features=True,save_features=False)
 print("Done!")
 print("Clustering data... ")
 data = sub_clustering.kMeansSubCluster(feature_data, normalize=True)

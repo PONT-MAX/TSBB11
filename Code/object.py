@@ -138,7 +138,7 @@ def getMarkers(map_name, map_id, object_mask, dhm_norm,
     # Finding certain background area
     kernel = np.ones((3, 3), np.uint8)  # Minimal Kernel size.
     dilate_iterations = 3;
-    sure_bg = cv2.dilate(mask, kernel, iterations=dilate_i  terations)
+    sure_bg = cv2.dilate(mask, kernel, iterations=dilate_iterations)
 
     # Finding certain foreground area
     sure_fg = np.uint8(mask)
@@ -189,8 +189,8 @@ def extractFeatureData(markers, dhm, dtm, cls, NUMBER_OF_FEATURES,
         row, col = getPixel(indices, cutout_size, image_size)
         
         # Get coutout mask and maps
-        dhm_cutout, dtm_cutout, cls_cutout, cutout = 
-            getCutOut(markers, dhm, dtm, cls, row, col, marker_id, cutout_size)
+        dhm_cutout, dtm_cutout, cls_cutout, cutout = getCutOut(markers,
+            dhm, dtm, cls, row, col, marker_id, cutout_size)
 
         # Get features from height map
         dhm_mask = cutout * dhm_cutout
@@ -201,8 +201,7 @@ def extractFeatureData(markers, dhm, dtm, cls, NUMBER_OF_FEATURES,
             continue
 
         # Get features from binary map
-        contour_ratio, contour_area, contour_width, contour_height, 
-            good, arc_length = getFeaturesFromBinary(cutout)
+        contour_ratio, contour_area, contour_width, contour_height, good, arc_length = getFeaturesFromBinary(cutout)
 
         if good == 0:
             #Area too small - not good!
