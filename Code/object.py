@@ -619,7 +619,7 @@ def extractFeatureData(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, map_id, que, 
     que.put(feature_data)
 
 def getFeatures(map_source_directory,CORES,NUMBER_OF_FEATURES,new_markers=None,
-    filename=None,load_features=False,save_features=False):
+                filename=None,load_features=False,save_features=False):
 
     """thread worker function"""
 
@@ -680,7 +680,7 @@ def getFeatures(map_source_directory,CORES,NUMBER_OF_FEATURES,new_markers=None,
         print("\n\nAr du helt saker pa att andrade NUMBER oF FEATURES ?!?!?!?!?!?!?!!?!!?!?!?!")
         np.save(filename, feature_data)
 
-    return feature_data
+    return np.transpose(feature_data)
 
 
 
