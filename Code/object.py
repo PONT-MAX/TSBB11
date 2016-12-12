@@ -109,7 +109,8 @@ def getFeaturesFromBinary(mark_mask):
     return contour_ratio, contour_area, width_out, height_out, good, arc_length
 
 #Saves all markers to PNG files
-def saveMarkers(map_source_directory, MIN_BLOB_SIZE, PERCENTAGEOFARC1, PERCENTAGEOFARC2):
+def saveMarkers(map_source_directory, MIN_BLOB_SIZE, 
+    PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2,QUANTIZE_ANGLES):
     for map_c in range(0, 11):
         print("Saving new markers... map: ", map_c)
         map_name = map_source_directory[map_c]
@@ -122,18 +123,18 @@ def saveMarkers(map_source_directory, MIN_BLOB_SIZE, PERCENTAGEOFARC1, PERCENTAG
 
         object_mask = help_functions.getObject(cls, dhm)
         markers = getMarkers(map_name, map_c, object_mask, dhm_norm,
-            MIN_BLOB_SIZE, PERCENTAGEOFARC1, PERCENTAGEOFARC2)
+            MIN_BLOB_SIZE, PERCENTAGE_OF_ARCENTAGE_OF_ARC1, PERCENTAGE_OF_ARCENTAGE_OF_ARC2, QUANTIZE_ANGLES)
         name = "./markers/markers_" + str(map_c) + ".png"
         Image.fromarray(markers).save(name, bits=32)
 
 #Returns markers - numbered binary objects - from a given map
 def getMarkers(map_name, map_id, object_mask, dhm_norm, 
-    MIN_BLOB_SIZE, PERCENTAGEOFARC1, PERCENTAGEOFARC2):
+    MIN_BLOB_SIZE, PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2,QUANTIZE_ANGLES):
 
     # Import ortho map for watershed. Import house mask.
     ortho = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1)
     _, mask = extract_buildings.getBuildings(ortho, object_mask,dhm_norm, 
-        MIN_BLOB_SIZE, PERCENTAGEOFARC1, PERCENTAGEOFARC2)
+        MIN_BLOB_SIZE, PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2,QUANTIZE_ANGLES)
 
     # Finding certain background area
     kernel = np.ones((3, 3), np.uint8)  # Minimal Kernel size.
@@ -233,10 +234,8 @@ def extractFeatureData(markers, dhm, dtm, cls, NUMBER_OF_FEATURES,
 
 #Returns features from all maps, uses all cores available.
 def getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURES, MIN_BLOB_SIZE,
-    PERCENTAGEOFARC1, PERCENTAGEOFARC2, new_markers=None, filename=None,
-    load_features=False,save_features=False):
-
-
+    PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2, QUANTIZE_ANGLES, new_markers=None,
+    filename=None,load_features=False,save_features=False):
 
     if new_markers is None:
         new_markers = False
@@ -245,7 +244,8 @@ def getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURES, MIN_BLOB_SIZE,
 
     if new_markers:
         print("Make new markers")
-        saveMarkers(map_source_directory, MIN_BLOB_SIZE, PERCENTAGEOFARC1, PERCENTAGEOFARC2)
+        saveMarkers(map_source_directory, MIN_BLOB_SIZE, 
+            PERCENTAGE_OF_ARCENTAGE_OF_ARC1, PERCENTAGE_OF_ARCENTAGE_OF_ARC2, QUANTIZE_ANGLES)
     elif load_features:
         print("Using old Features")
         return np.transpose(np.load(filename))

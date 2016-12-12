@@ -4,6 +4,7 @@ import math
 from PIL import Image
 import scipy
 import object
+import extract_buildings
 
 #Returns thresholded dhm on a certain elevation.
 def getObject(cls,dhm):
@@ -23,7 +24,8 @@ def getObject(cls,dhm):
     object_mask[object_mask>0.0] = 2
     return object_mask
 
-
+#Finds the buildings in the ortho-map and returns them in a binary mask
+    #Returns the number of blobs, a labeled "binary" mask and information of each blob
 def getBlobs(object_mask, ortho, minblob):
 
     #hough-transform to retrive the buildings
@@ -59,6 +61,8 @@ def getBlobs(object_mask, ortho, minblob):
     return number_of_blobs, labels, stats, ortho_png
 
 
+#Crops out a part of the image
+   #Returns the patch and the corner points in the initial image
 def cropImPart(ortho, stats,margin):
     (h,w) = ortho.shape[:2]
 
@@ -91,40 +95,23 @@ def cropImPart(ortho, stats,margin):
 
     return cropped_im, [left_coord, right_coord, top_coord, bottom_coord]
 
-
+#Returns a binary image with the rotated bounding boxes filled in
 def getRotatedBox(bin_im):
     #start at 1 since 0 is background
-    #for blob in range(1, no_blobs):
     bin_im_out=bin_im.copy()
-    ret, contours, hierarchy = cv2.findContours(bin_im, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE )
+    ret, contours, hierarchy = cv2.findContours(bin_im, 
+        mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE )
     length=len(contours)-1
     feat =np.zeros((length,3))
     for cnt in range(0, length):
         rect = cv2.minAreaRect(contours[cnt+1])
-        #w,h,angle in feat_mtx
-        #feat[cnt,0]=int(round(rect[1][0]))
-        #feat[cnt,1]=int(round(rect[1][1]))
-        #feat[cnt,2]=int(round(rect[2]))
         box = cv2.boxPoints(rect)
         box = np.int0(box)
         cv2.drawContours(bin_im_out, [box], 0, (255, 0, 0), 2)
 
-        """
-        angle = rect[2];
-        rect_size = rect[1];
-        if (rect[2] < -45.0):
-            angle = angle + 90.0
-            rect_size[0], rect_size[1] = rect_size[1], rect_size[0]
-        M = cv2.getRotationMatrix2D(rect[0], angle, 1.0)
-        rotated = cv2.warpAffine(bin_im,M,bin_im.shape)
-        rotated_patch= cv2.getRectSubPix(rotated, rect_size, rect[0])
-        cv2.imshow('hough', rotated_patch)
-        cv2.waitKey(0)
+    return bin_im_out
 
-        """
-    return bin_im_out   #, feat
-
-# A function that rotates buildings a little in order to align them.
+#A function that rotates buildings a little in order to align them.
 def quantizeAngle(rect):
         (width,height)=rect[1]
         angle=rect[2]
@@ -159,9 +146,11 @@ def quantizeAngle(rect):
         recta = (rect[0],rect[1], angle)
         return recta
 
-def getApproxBoxes(bin_im, perc1, perc2):
+#Returns a mask with an approximation of the box shapes
+def getApproxBoxes(bin_im, PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2, quantize):
     bin_im_out = bin_im.copy()
-    ret, contours, hierarchy = cv2.findContours(bin_im,mode = cv2.RETR_EXTERNAL,method =cv2.CHAIN_APPROX_SIMPLE)
+    ret, contours, hierarchy = cv2.findContours(bin_im, 
+        mode = cv2.RETR_EXTERNAL, method =cv2.CHAIN_APPROX_SIMPLE)
     bin_im_out = cv2.merge((bin_im_out,bin_im_out,bin_im_out)) # Making bin_im_out 3 channel to display colors.
     for cnt in contours:
             (x,y), (w,h), angle = cv2.minAreaRect(cnt)
@@ -171,20 +160,24 @@ def getApproxBoxes(bin_im, perc1, perc2):
             # Forces bounding boxes onto ish rectangular buildings
             if fillArea > 0.65 and area <8000:
                 rect = cv2.minAreaRect(cnt)
-                newRect=quantizeAngle(rect)
-                box = cv2.boxPoints(newRect)
+
+                if quantize:
+                    newRect=quantizeAngle(rect)
+                    box = cv2.boxPoints(newRect)
+                else:
+                    box = cv2.boxPoints(rect)
                 box = np.int0(box)
                 cv2.drawContours(bin_im_out,[box],0,(255,0,0),-1)
             # Draw bigger objects with help from perimeter lenght
             else:
-                epsilon = perc1 * cv2.arcLength(cnt,True)
+                epsilon = PERCENTAGE_OF_ARC1 * cv2.arcLength(cnt,True)
                 area_cont = cv2.contourArea(cnt)
                 approx = cv2.approxPolyDP(cnt,epsilon,True)
                 area_approx = cv2.contourArea(approx)
                 fillArea2 = area_approx/area_cont
                 cv2.drawContours(bin_im_out,[approx],0,(0,0,255),-1)
                 if fillArea2<0.95 and area>10000:
-                    epsilon = perc2 * cv2.arcLength(cnt,True)
+                    epsilon = PERCENTAGE_OF_ARC2 * cv2.arcLength(cnt,True)
                     approx = cv2.approxPolyDP(cnt,epsilon,True)
                     cv2.drawContours(bin_im_out,[approx],0,(0,0,255),-1)
 
@@ -202,12 +195,7 @@ def getApproxBoxes(bin_im, perc1, perc2):
 
     return bin_im_out
 
-#def getImprovedHouses(a, b, c, d)
-##    img_dsm = cv2.imread('dsm_n.png')
-#   nice_map = getApproxBoxes(bin_im)
-
-
-
+#Separating buildings in the large blobs into smaller blobs
 def blobSep(im, dhm):
     #separating buildings in the large blobs into smaller blobs
     im=im/255
@@ -218,7 +206,7 @@ def blobSep(im, dhm):
     object_mask=np.uint8(object_mask)
     return object_mask
 
-
+#Finds the very large buildings and replaces them with a separated version
 def moreMorph(bin_im, labeled, no_blobs, stats, meanval, dhm):
 
     #limi=2*meanval
@@ -231,11 +219,44 @@ def moreMorph(bin_im, labeled, no_blobs, stats, meanval, dhm):
         patch,_=cropImPart(bin_im, stats[large, :],0)
         dhm_patch,_=cropImPart(dhm, stats[large, :],0)
         separated=blobSep(patch, dhm_patch)
-        bin_im[stats[large, 1]:(stats[large, 1]+stats[large, 3]), stats[large, 0]:(stats[large, 0]+stats[large, 2])]=separated
+        bin_im[stats[large, 1]:(stats[large, 1]+stats[large, 3]), 
+            stats[large, 0]:(stats[large, 0]+stats[large, 2])] = separated
 
     return bin_im
 
-#Legacy function - returns all points on line
+def printMonopolyHouses(map_source_directory,minBlob, PERCENTAGE_OF_ARC1, 
+    PERCENTAGE_OF_ARC2, QUANTIZE_ANGLES):
+    for map_c in range(0, 11):
+        map_name = map_source_directory[map_c]
+        ortho = cv2.imread('../Data/ortho/' + map_name + 'tex.tif', 1)
+        cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
+        dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
+        dtm = cv2.imread('../Data/dtm/' + map_name + 'dtm.tif', -1)
+        dhm_modified = np.copy(dhm)
+        dtm_modified = np.copy(dtm)
+        object_mask = getObject(cls,dhm)
+
+        _, binary_mask = extract_buildings.getBuildings(ortho,object_mask,
+            dhm,minBlob,PERCENTAGE_OF_ARC1,PERCENTAGE_OF_ARC2,QUANTIZE_ANGLES)
+
+        number_of_blobs, labels,_, _ = cv2.connectedComponentsWithStats(binary_mask,connectivity=4)
+        _, normalized_mask = cv2.threshold(binary_mask, 0, 1, cv2.THRESH_BINARY)
+    
+        for blob_number in range(0,number_of_blobs):
+            vals_from_mask = normalized_mask[labels == blob_number]
+            if vals_from_mask[0] > 0:
+                median_dhm = np.median(dhm[labels == blob_number])
+                median_dtm = np.median(dtm[labels == blob_number])
+                dtm_modified[labels == blob_number] = median_dtm
+                dhm_modified[labels == blob_number] = median_dhm
+    
+        houses = np.multiply(dhm_modified, normalized_mask)
+        good_height = houses + dtm_modified
+        filename = '../Data/monopoly/' + map_name + "monopoly.png"
+        Image.fromarray(good_height.astype('uint8')).save(filename)
+
+#Legacy function - takes a line in an image as starting and endpoint
+#   returns a list with all points on the line
 def lineIter(img, line):
     x1 = line[0][0]
     y1 = line[0][1]

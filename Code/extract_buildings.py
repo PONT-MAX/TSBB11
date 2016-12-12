@@ -6,7 +6,7 @@ import scipy
 from scipy import ndimage
 import help_functions
 
-def getBuildings(ortho,object_mask, dhm, minBlob, perc1, perc2):
+def getBuildings(ortho,object_mask, dhm, minBlob, PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2, QUANTIZE_ANGLES):
     #Note: dhm is normalized
     ortho_clean=ortho.copy()
 
@@ -67,7 +67,7 @@ def getBuildings(ortho,object_mask, dhm, minBlob, perc1, perc2):
     #rotated_box = help_functions.get_approx_box(better_morph)
     #better_morph = np.repeat(better_morph,3,1)
     # out = cv2.merge((better_morph,better_morph,better_morph),1)
-    approxBoxes = help_functions.getApproxBoxes(better_morph, perc1, perc2)
+    approxBoxes = help_functions.getApproxBoxes(better_morph, PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2, QUANTIZE_ANGLES)
 
     #return rotated_box
     return approxBoxes, better_morph
