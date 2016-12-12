@@ -1,20 +1,23 @@
 clear all
 close all
 clc
+%%
 dsm = imread('../Data/dsm/0153359e_582245n_20160905T073406Z_dsm.tif');
 dtm = imread('../Data/dtm/0153359e_582245n_20160905T073406Z_dtm.tif');
 %%
 
-dhm = imread('good_height_cv2.png');
-dhm_n = imread('good_height_without_norm_cv2.png');
-dhm_n = imread('good_height_new.png');
+%dhm = imread('good_height_cv2.png');
+%dhm_n = imread('good_height_without_norm_cv2.png');
 
-max(max(dsm))
-max(max(dhm))
+dsm = imread('../Data/dsm/0153359e_582245n_20160905T073406Z_dsm.tif');
+dhm_n = imread('../Data/monopoly/0153359e_582245n_20160905T073406Z_monopoly.png');
+dhm_n = imread('./tif/map_not_aligned.png');
+%max(max(dsm))
+%max(max(dhm))
 max(max(dhm_n))
 
-min(min(dsm))
-min(min(dhm))
+%min(min(dsm))
+%min(min(dhm))
 min(min(dhm_n))
 %%
 dsmc = dhm_n(500:1500,5600:6400);

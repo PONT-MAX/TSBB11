@@ -24,13 +24,14 @@ key.ProjLinearUnitsGeoKey = 9001;
 key.VerticalUnitsGeoKey = 9001;
 
 for x = 1:rows
+    x
     file = filenames(x,:);
     dtm_file = ['../dtm/',file,'dtm.tif'];
     monopoly_file = [file,'monopoly.tif'];
     png_file = [file,'monopoly.png'];
     
     [dtm, R] = geotiffread(dtm_file); 
-    monopoly = imread(png_file);
+    monopoly = cast(imread(png_file),'single');
     
     dtm = dtm*0;
     dtm = dtm + monopoly;

@@ -128,7 +128,7 @@ def saveMarkers(map_source_directory, MIN_BLOB_SIZE,
         Image.fromarray(markers).save(name, bits=32)
 
 #Returns markers - numbered binary objects - from a given map
-def getMarkers(map_name, map_id, object_mask, dhm_norm, 
+def getMarkers(map_name, map_id, object_mask, dhm_norm, k
     MIN_BLOB_SIZE, PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2,QUANTIZE_ANGLES):
 
     # Import ortho map for watershed. Import house mask.
@@ -144,7 +144,7 @@ def getMarkers(map_name, map_id, object_mask, dhm_norm,
     # Finding certain foreground area
     sure_fg = np.uint8(mask)
 
-    # Finding unknown regionq   <qq
+    # Finding unknown region
     unknown = cv2.subtract(sure_bg, sure_fg)
 
     # Marker labeling
@@ -259,7 +259,8 @@ def getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURES, MIN_BLOB_SIZE,
         print("Map: ", x)
         map_name = map_source_directory[x]
         dhm = cv2.imread('../Data/dhm/' + map_name + 'dhm.tif', -1)
-        dtm = cv2.imread('../Data/dtm/' + map_name + 'dtm.tif', -1)
+        #dtm = cv2.imread('../Data/dtm/' + map_name + 'dtm.tif', -1)
+        dsm = cv2.imread('../Data/dsm/' + map_name + 'dsm.tif', -1)
         cls = cv2.imread('../Data/auxfiles/' + map_name + 'cls.tif', 0)
 
         print("Using Old Markers")
@@ -271,7 +272,7 @@ def getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURES, MIN_BLOB_SIZE,
         threads = []
         for i in range(0, CORES):
             t = threading.Thread(target=extractFeatureData,
-                                 args=(markers, dhm, dtm, cls, NUMBER_OF_FEATURES, x, que, CORES, i))
+                                 args=(markers, dhm, dsm, cls, NUMBER_OF_FEATURES, x, que, CORES, i))
             threads.append(t)
             t.start()
 
