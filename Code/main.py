@@ -50,7 +50,7 @@ map_source_directory = init_v.init_map_directory()
 date = datetime.datetime.now()
 #feature_data_filename = './numpy_arrays/feature_data_all_threads_final_' + \
 	#str(date.month) + str(date.day) + str(date.hour) + str(date.minute) + '.npy'
-feature_data_filename ='./numpy_arrays/name_of_loaded_array.npy'
+feature_data_filename ='./numpy_arrays/feature_data_all_threads_final.npy'
 
 # Extract features
 print("Loading feature data... ")
