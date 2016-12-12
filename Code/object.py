@@ -123,7 +123,7 @@ def saveMarkers(map_source_directory, MIN_BLOB_SIZE,
 
         object_mask = help_functions.getObject(cls, dhm)
         markers = getMarkers(map_name, map_c, object_mask, dhm_norm,
-            MIN_BLOB_SIZE, PERCENTAGE_OF_ARCENTAGE_OF_ARC1, PERCENTAGE_OF_ARCENTAGE_OF_ARC2, QUANTIZE_ANGLES)
+            MIN_BLOB_SIZE, PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2, QUANTIZE_ANGLES)
         name = "./markers/markers_" + str(map_c) + ".png"
         Image.fromarray(markers).save(name, bits=32)
 
@@ -245,7 +245,7 @@ def getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURES, MIN_BLOB_SIZE,
     if new_markers:
         print("Make new markers")
         saveMarkers(map_source_directory, MIN_BLOB_SIZE, 
-            PERCENTAGE_OF_ARCENTAGE_OF_ARC1, PERCENTAGE_OF_ARCENTAGE_OF_ARC2, QUANTIZE_ANGLES)
+            PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2, QUANTIZE_ANGLES)
     elif load_features:
         print("Using old Features")
         return np.transpose(np.load(filename))

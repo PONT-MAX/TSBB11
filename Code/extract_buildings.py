@@ -40,36 +40,8 @@ def getBuildings(ortho,object_mask, dhm, minBlob, PERCENTAGE_OF_ARC1, PERCENTAGE
     better_morph = cv2.morphologyEx(better_morph, cv2.MORPH_CLOSE, kernel)
     better_morph = cv2.morphologyEx(better_morph, cv2.MORPH_OPEN, kernel)
 
-    #Image.fromarray(better_morph).show()
-
-    #making a 3 channel image of the thresholded image
-    #thresh_3d = np.repeat(thresh1[:, :, np.newaxis], 3, axis=2)
-    #thresh_3dclean = thresh_3d.copy()
-
-    """
-    patch_list = []
-    coords_list = []
-
-    #start at 1 since first blob is the background
-    margin=20
-    for box_no in range(40, 50):
-        im_patch, im_coords = help_functions.cropImPart(thresh1_clean, stats[box_no, :],margin)
-        patch_list.append(im_patch)
-        coords_list.append(im_coords)
-
-        #no_blobs, patch_labels, _, _ = cv2.connectedComponentsWithStats(im_patch, connectivity=4)
-        #rotated_boxes = help_functions.getRotatedBox(patch_labels , no_blobs)
-
-        #cv2.imshow('hough', rotated_boxes)
-        #cv2.waitKey(0)
-    """
-
-    #rotated_box = help_functions.get_approx_box(better_morph)
-    #better_morph = np.repeat(better_morph,3,1)
-    # out = cv2.merge((better_morph,better_morph,better_morph),1)
     approxBoxes = help_functions.getApproxBoxes(better_morph, PERCENTAGE_OF_ARC1, PERCENTAGE_OF_ARC2, QUANTIZE_ANGLES)
 
-    #return rotated_box
     return approxBoxes, better_morph
 
     #see which components have a number of pixels that are above a certain number of connected pixels and open/close them
