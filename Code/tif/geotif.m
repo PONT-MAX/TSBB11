@@ -26,11 +26,11 @@ key.VerticalUnitsGeoKey = 9001;
 %%
 for x = 1:rows
     file = filenames(x,:)
-    cls_file = [file,'cls.tif']
+    cls_file = ['../auxfiles/',file,'cls.tif']
     ccls_file = [file,'ccls.tif']
     png_file = [file,'ccls.png']
     
     [cls, R] = geotiffread(cls_file); 
     ccls = imread(png_file);
-    geotiffwrite(ccls_file,image,R,'GeoKeyDirectoryTag',key);
+    geotiffwrite(ccls_file,ccls,R,'GeoKeyDirectoryTag',key);
 end
