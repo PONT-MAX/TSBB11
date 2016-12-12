@@ -52,12 +52,12 @@ feature_data_filename = './numpy_arrays/feature_data_all_threads_final_' + \
 # Extract features
 print("Loading feature data... ")
 
-feature_data = object.getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURES, new_markers=False,
-								  filename='./numpy_arrays/feature_data_all_threads_final.npy', load_features=True)
+feature_data = object.getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURES, new_markers=True,
+								  filename='./numpy_arrays/feature_data_all_threads_final.npy', save_features=True)
 
 data = sc.kMeansSubCluster(feature_data,normalize=True)
 
-#object.colorCluster(data,map_source_directory,CORES,save=True,im_name='New_data2', scale=0.125)
+object.colorCluster(data,map_source_directory,CORES,save=True,im_name='Full_Res', scale=1)
 sc.exportCluster2PNG(data, map_source_directory, CORES)
 
 

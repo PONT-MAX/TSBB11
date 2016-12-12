@@ -540,7 +540,7 @@ def colorCluster(cluster_data, map_source_directory, CORES, scale=None, save=Non
     if save:
         print("Saving Class image")
         print("Shape FD = ", im_full.shape)
-        Image.fromarray(im_full.astype('uint8')).save("ColoredImage" + im_name + ".jpeg")
+        Image.fromarray(im_full.astype('uint8')).save("Clustered_colored_" + im_name + "_.jpeg")
     else:
         print("Show Image")
         Image.fromarray(im_full.astype('uint8')).show()
