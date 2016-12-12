@@ -52,8 +52,9 @@ def labeler(TREAHD_ID, cluster_data, map_c, markers, CORES, cls_mask):
             if not feat % (nbr_feat_max / 10):
                 print("Map: ", map_c, " || Thread: ", TREAHD_ID, " || done: ", ((feat * 100) / nbr_feat_max), "%")
 
+            # Add one to labels to destinct from BG
             marker_id = cluster_data[feat, -3]
-            label = cluster_data[feat, -1]
+            label = cluster_data[feat, -1] + 1
             index_pos = np.where(markers == marker_id)
             cls_mask[index_pos] = label
     if TREAHD_ID == 0:

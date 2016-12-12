@@ -2,7 +2,7 @@
 clear
 clc
 close all
-%%
+
 filenames = ['0152945e_582034n_20160905T073402Z_';
     '0152947e_582246n_20160905T073405Z_';
     '0152949e_582459n_20160905T073406Z_';
@@ -23,14 +23,26 @@ key.ProjectedCSTypeGeoKey = 32633;
 key.ProjLinearUnitsGeoKey = 9001;
 key.VerticalUnitsGeoKey = 9001;
 
-%%
 for x = 1:rows
-    file = filenames(x,:)
-    cls_file = ['../auxfiles/',file,'cls.tif']
-    ccls_file = [file,'ccls.tif']
-    png_file = [file,'ccls.png']
+    file = filenames(x,:);
+    cls_file = ['../auxfiles/',file,'cls.tif'];
+    ccls_file = [file,'ccls.tif'];
+    png_file = [file,'ccls.png'];
     
     [cls, R] = geotiffread(cls_file); 
     ccls = imread(png_file);
+    
+    min(min(ccls))
+    % Make unknown class #1
+    cls(cls ~= 2) = 0;
+    cls(cls > 0) = 1;
+    
+    % Increment class 
+    ccls(ccls > 0) = ccls(ccls > 0) + 1;
+    cls(ccls > 0) = 0;
+    
+    % Add to get result
+    cls = cls + ccls;
+    
     geotiffwrite(ccls_file,ccls,R,'GeoKeyDirectoryTag',key);
 end
