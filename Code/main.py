@@ -58,12 +58,11 @@ feature_data = object.getFeatures(map_source_directory, CORES, NUMBER_OF_FEATURE
  MIN_BLOB_SIZE, PERCENTAGEOFARC1, PERCENTAGEOFARC2, new_markers=True, 
  filename=feature_data_filename,load_features=False,save_features=True)
 print("Done!")
-
 print("Clustering data... ")
 data = sub_clustering.kMeansSubCluster(feature_data, normalize=True)
 print("Done!")
 print("Coloring data... ")
 visualization.colorCluster(data, map_source_directory, CORES, save=True, 
 	im_name='New_data2', scale=0.125)
-#sub_clustering.exportCluster2PNG(data, map_source_directory, CORES)
+sub_clustering.exportCluster2PNG(data, map_source_directory, CORES)
 print("Done!")

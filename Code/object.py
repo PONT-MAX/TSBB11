@@ -162,6 +162,7 @@ def getMarkers(map_name, map_id, object_mask, dhm_norm,
 
     return markers1
 
+
 #Thread worker. Returns features from markers in a map
 def extractFeatureData(markers, dhm, dtm, cls, NUMBER_OF_FEATURES,
     map_id, que, CORES, THREAD_ID):
